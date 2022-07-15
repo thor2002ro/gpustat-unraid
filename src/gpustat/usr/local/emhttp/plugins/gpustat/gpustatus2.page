@@ -35,7 +35,7 @@ Icon="gpustat.png"
         'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
     ];
 
-    switch ($gpustat_cfg['VENDOR1']) {
+    switch ($gpustat_cfg['VENDOR2']) {
         case "nvidia":
             $gpu_nv = true;
             break;
@@ -50,126 +50,122 @@ Icon="gpustat.png"
             $gpu_unknown = true;
             $unknown_msg = "Default vendor set - Change vendor in GPUStat settings page and apply.";
     }
-
-    //$gpu_nv = true;
-    //$gpu_intel = true;
-    //$gpu_amd = true;
 ?>
 
 <style type="text/css">
     @import url("/plugins/gpustat/css/style.css");
 </style>
 
-<table id='db-box1' class='dash_gpustat1' style='display:none'>
+<table id='db-box1' class='dash_gpustat2' style='display:none'>
     <thead sort='953'><tr class='hidden'><td></td><td colspan='3'></td><td></td></tr></thead>
     <tbody sort='953' class='sortable'>
         <tr>
             <td></td>
             <td class='next' colspan='3'>
                 <i class='icon-hardware'></i>
-                <div class='section'>GPU1 - <span class='gpu1-vendor'></span>&nbsp;<span class='gpu1-name'></span><br>
+                <div class='section'>GPU2 - <span class='gpu2-vendor'></span>&nbsp;<span class='gpu2-name'></span><br>
 <?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>"); else : ?>
-                    <span id='load'>Load: <span class='gpu1-util'></span></span>
+                    <span id='load'>Load: <span class='gpu2-util'></span></span>
 <?php if ($gpu_nv || $gpu_amd) : ?>
 <?php if($gpustat_cfg['DISPTEMP']) : ?>
-                    <span>Temperature: <span class='gpu1-temp'></span></span>
+                    <span>Temperature: <span class='gpu2-temp'></span></span>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($gpu_nv) : ?>
 <?php if ($gpustat_cfg['DISPSESSIONS']) : ?>
-                    &emsp;&ensp;<span>Processes: <span class='gpu1-sessions'></span></span>
+                    &emsp;&ensp;<span>Processes: <span class='gpu2-sessions'></span></span>
 <?php endif; ?>
 <?php endif; ?>
                 </div>
 <?php endif; ?>
-                <i class='fa fa-fw chevron mt0' id='dash_gpustat_toggle1' onclick='toggleChevron("dash_gpustat_toggle1",0)'></i>
+                <i class='fa fa-fw chevron mt0' id='dash_gpustat_toggle2' onclick='toggleChevron("dash_gpustat_toggle2",0)'></i>
                 <a href='/Settings/GPUStatSettings' id='dash_gpustat_settings' title='Go to GPU Statistics settings'><i class='fa fa-fw fa-cog chevron mt0'></i></a>
             </td>
             <td></td>
         </tr>
 <?php if ($gpu_unknown) : printf("\t</tbody>\n</table>"); else : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
 <?php if ($gpu_nv) : ?>
 <?php if($gpustat_cfg['DISPPCIUTIL']) : ?>
             <td></td>
             <td></td>
-            <td>&emsp;&ensp;<span id='gpu1-pciegen'>PCIe Gen (Max): <span class='gpu1-pciegen'></span>&nbsp;(<span class='gpu1-pciegenmax'></span>)</span></td>
-            <td>&emsp;&ensp;<span id='gpu1-pciewidth'>Lanes (Max): <span class='gpu1-pciewidth'></span>&nbsp;(<span class='gpu1-pciewidthmax'></span>)</span></td>
+            <td>&emsp;&ensp;<span id='gpu2-pciegen'>PCIe Gen (Max): <span class='gpu2-pciegen'></span>&nbsp;(<span class='gpu2-pciegenmax'></span>)</span></td>
+            <td>&emsp;&ensp;<span id='gpu2-pciewidth'>Lanes (Max): <span class='gpu2-pciewidth'></span>&nbsp;(<span class='gpu2-pciewidthmax'></span>)</span></td>
 <?php endif; ?>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php if ($gpu_nv) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Load - Memory</td>
-            <td><span class='gpu1-util load'></span><div class='usage-disk sys'><span class='gpu1-utilbar'></span><span></span></div></td>
+            <td><span class='gpu2-util load'></span><div class='usage-disk sys'><span class='gpu2-utilbar'></span><span></span></div></td>
 <?php if($gpustat_cfg['DISPMEMUTIL']) : ?>
-            <td><span class='gpu1-memutil load'></span><div class='usage-disk sys'><span class='gpu1-memutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-memutil load'></span><div class='usage-disk sys'><span class='gpu2-memutilbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php if($gpustat_cfg['DISPENCDEC']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Encoder - Decoder</td>
-            <td><span class='gpu1-encutil load'></span><div class='usage-disk sys'><span class='gpu1-encutilbar'></span><span></span></div></td>
-            <td><span class='gpu1-decutil load'></span><div class='usage-disk sys'><span class='gpu1-decutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-encutil load'></span><div class='usage-disk sys'><span class='gpu2-encutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-decutil load'></span><div class='usage-disk sys'><span class='gpu2-decutilbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPCLOCKS']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>GPU - Memory (MHz)</td>
-            <td><span class='gpu1-clock load'></span><div class='usage-disk sys'><span class='gpu1-gpuclockbar'></span><span></span></div></td>
-            <td><span class='gpu1-memclock load'></span><div class='usage-disk sys'><span class='gpu1-memclockbar'></span><span></span></div></td>
+            <td><span class='gpu2-clock load'></span><div class='usage-disk sys'><span class='gpu2-gpuclockbar'></span><span></span></div></td>
+            <td><span class='gpu2-memclock load'></span><div class='usage-disk sys'><span class='gpu2-memclockbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPFAN'] || $gpustat_cfg['DISPPWRDRAW']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Fan - Power</td>
 <?php if($gpustat_cfg['DISPFAN']) : ?>
-            <td><span class='gpu1-fan load'></span><div class='usage-disk sys'><span class='gpu1-fanbar'></span><span></span></div></td>
+            <td><span class='gpu2-fan load'></span><div class='usage-disk sys'><span class='gpu2-fanbar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPPWRDRAW']) : ?>
-            <td><span class='gpu1-power load'></span><div class='usage-disk sys'><span class='gpu1-powerbar'></span><span></span></div></td>
+            <td><span class='gpu2-power load'></span><div class='usage-disk sys'><span class='gpu2-powerbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPPCIUTIL']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>PCI Bus Rx/Tx (MB/s)</td>
-            <td><span class='gpu1-rxutil load'></span><div class='usage-disk sys'><span class='gpu1-rxutilbar'></span><span></span></div></td>
-            <td><span class='gpu1-txutil load'></span><div class='usage-disk sys'><span class='gpu1-txutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-rxutil load'></span><div class='usage-disk sys'><span class='gpu2-rxutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-txutil load'></span><div class='usage-disk sys'><span class='gpu2-txutilbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPTHROTTLE'] || $gpustat_cfg['DISPPWRSTATE']): ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Power State - Throttling</td>
 <?php if($gpustat_cfg['DISPPWRSTATE']) : ?>
-            <td><span class='gpu1-perfstate load'></span></td>
+            <td><span class='gpu2-perfstate load'></span></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPTHROTTLE']): ?>
-            <td><span class='gpu1-throttled load'></span>&nbsp;<span class='gpu1-thrtlrsn load'></span></td>
+            <td><span class='gpu2-throttled load'></span>&nbsp;<span class='gpu2-thrtlrsn load'></span></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPSESSIONS']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Active Apps</td>
             <td colspan="2">
 <?php foreach($apps as $app): ?>
-                <span id="gpu1-img-span-<?= $app; ?>" class='gpu1-img-span gpu1-img-span-<?= $app; ?>'>
-                    <img id='gpu1-<?= $app; ?>' class='gpu1-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
+                <span id="gpu2-img-span-<?= $app; ?>" class='gpu2-img-span gpu2-img-span-<?= $app; ?>'>
+                    <img id='gpu2-<?= $app; ?>' class='gpu2-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
                 </span>
 <?php endforeach; ?>
             </td>
@@ -179,174 +175,174 @@ Icon="gpustat.png"
 <?php endif; ?>
 <?php if ($gpu_intel) : ?>
 <?php if($gpustat_cfg['DISP3DRENDER']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>3D Render Load</td>
-            <td colspan="2"><span class='gpu1-3drender load'></span><div class='usage-disk sys'><span class='gpu1-3drenderbar'></span><span></span></div></td>
+            <td colspan="2"><span class='gpu2-3drender load'></span><div class='usage-disk sys'><span class='gpu2-3drenderbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPBLITTER']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Blitter Load</td>
-            <td colspan="2"><span class='gpu1-blitter load'></span><div class='usage-disk sys'><span class='gpu1-blitterbar'></span><span></span></div></td>
+            <td colspan="2"><span class='gpu2-blitter load'></span><div class='usage-disk sys'><span class='gpu2-blitterbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPVIDEO']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Video Load</td>
-            <td colspan="2"><span class='gpu1-video load'></span><div class='usage-disk sys'><span class='gpu1-videobar'></span><span></span></div></td>
+            <td colspan="2"><span class='gpu2-video load'></span><div class='usage-disk sys'><span class='gpu2-videobar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPVIDENH']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Video Enhance Load</td>
-            <td colspan="2"><span class='gpu1-videnh load'></span><div class='usage-disk sys'><span class='gpu1-videnhbar'></span><span></span></div></td>
+            <td colspan="2"><span class='gpu2-videnh load'></span><div class='usage-disk sys'><span class='gpu2-videnhbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPPWRDRAW']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Power Draw</td>
-            <td colspan="2"><span class='gpu1-power load'></span><div class='usage-disk sys'><span class='gpu1-powerutilbar'></span><span></span></div></td>
+            <td colspan="2"><span class='gpu2-power load'></span><div class='usage-disk sys'><span class='gpu2-powerutilbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPPCIUTIL']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>IMC Bus Utilization</td>
-            <td colspan="2">Receive: <span class='gpu1-rxutil'></span> &emsp; Transmit: <span class='gpu1-txutil'></span></td>
+            <td colspan="2">Receive: <span class='gpu2-rxutil'></span> &emsp; Transmit: <span class='gpu2-txutil'></span></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPCLOCKS']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>GPU Clock (MHz)</td>
-            <td colspan="2"><span class='gpu1-clock load'></span></td>
+            <td colspan="2"><span class='gpu2-clock load'></span></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPINTERRUPT']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Interrupts/Sec</td>
-            <td colspan="2"><span class='gpu1-interrupts load'></span></td>
+            <td colspan="2"><span class='gpu2-interrupts load'></span></td>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($gpu_amd) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>GPU Load</td>
-            <td colspan="2"><span class='gpu1-util load'></span><div class='usage-disk sys'><span class='gpu1-utilbar'></span><span></span></div></td>
+            <td colspan="2"><span class='gpu2-util load'></span><div class='usage-disk sys'><span class='gpu2-utilbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php if($gpustat_cfg['DISPGFXTRANS'] || $gpustat_cfg['DISPMEMUTIL']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Translate - Memory (MB)</td>
 <?php if($gpustat_cfg['DISPGFXTRANS']) : ?>
-            <td><span class='gpu1-gfxtrans load'></span><div class='usage-disk sys'><span class='gpu1-gfxtransbar'></span><span></span></div></td>
+            <td><span class='gpu2-gfxtrans load'></span><div class='usage-disk sys'><span class='gpu2-gfxtransbar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPMEMUTIL']) : ?>
-            <td><span class='gpu1-memused load'></span><div class='usage-disk sys'><span class='gpu1-memutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-memused load'></span><div class='usage-disk sys'><span class='gpu2-memutilbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPEVENT'] || $gpustat_cfg['DISPVERTEX']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Event - Vertex</td>
 <?php if($gpustat_cfg['DISPEVENT']) : ?>
-            <td><span class='gpu1-event load'></span><div class='usage-disk sys'><span class='gpu1-eventbar'></span><span></span></div></td>
+            <td><span class='gpu2-event load'></span><div class='usage-disk sys'><span class='gpu2-eventbar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPVERTEX']) : ?>
-            <td><span class='gpu1-vertex load'></span><div class='usage-disk sys'><span class='gpu1-vertexbar'></span><span></span></div></td>
+            <td><span class='gpu2-vertex load'></span><div class='usage-disk sys'><span class='gpu2-vertexbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPTEXTURE'] || $gpustat_cfg['DISPSEQUENCER']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Texture - Sequencer</td>
 <?php if($gpustat_cfg['DISPTEXTURE']) : ?>
-            <td><span class='gpu1-texture load'></span><div class='usage-disk sys'><span class='gpu1-texturebar'></span><span></span></div></td>
+            <td><span class='gpu2-texture load'></span><div class='usage-disk sys'><span class='gpu2-texturebar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPSEQUENCER']) : ?>
-            <td><span class='gpu1-sequencer load'></span><div class='usage-disk sys'><span class='gpu1-sequencerbar'></span><span></span></div></td>
+            <td><span class='gpu2-sequencer load'></span><div class='usage-disk sys'><span class='gpu2-sequencerbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPSHADEREXP'] || $gpustat_cfg['DISPSHADERINTER']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Shader Export - Interpol</td>
 <?php if($gpustat_cfg['DISPSHADEREXP']) : ?>
-            <td><span class='gpu1-shaderexp load'></span><div class='usage-disk sys'><span class='gpu1-shaderexpbar'></span><span></span></div></td>
+            <td><span class='gpu2-shaderexp load'></span><div class='usage-disk sys'><span class='gpu2-shaderexpbar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPSHADERINTER']) : ?>
-            <td><span class='gpu1-shaderinter load'></span><div class='usage-disk sys'><span class='gpu1-shaderinterbar'></span><span></span></div></td>
+            <td><span class='gpu2-shaderinter load'></span><div class='usage-disk sys'><span class='gpu2-shaderinterbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPSCANCON'] || $gpustat_cfg['DISPPRIMASSEM']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Scan Conv - Prim Assem</td>
 <?php if($gpustat_cfg['DISPSCANCON']) : ?>
-            <td><span class='gpu1-scancon load'></span><div class='usage-disk sys'><span class='gpu1-scanconbar'></span><span></span></div></td>
+            <td><span class='gpu2-scancon load'></span><div class='usage-disk sys'><span class='gpu2-scanconbar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPPRIMASSEM']) : ?>
-            <td><span class='gpu1-primassem load'></span><div class='usage-disk sys'><span class='gpu1-primassembar'></span><span></span></div></td>
+            <td><span class='gpu2-primassem load'></span><div class='usage-disk sys'><span class='gpu2-primassembar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPDEPTHBLK'] || $gpustat_cfg['DISPCOLORBLK']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Blocks: Depth - Color</td>
 <?php if($gpustat_cfg['DISPDEPTHBLK']) : ?>
-            <td><span class='gpu1-depthblk load'></span><div class='usage-disk sys'><span class='gpu1-depthblkbar'></span><span></span></div></td>
+            <td><span class='gpu2-depthblk load'></span><div class='usage-disk sys'><span class='gpu2-depthblkbar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPCOLORBLK']) : ?>
-            <td><span class='gpu1-colorblk load'></span><div class='usage-disk sys'><span class='gpu1-colorblkbar'></span><span></span></div></td>
+            <td><span class='gpu2-colorblk load'></span><div class='usage-disk sys'><span class='gpu2-colorblkbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPFAN'] || $gpustat_cfg['DISPPWRDRAW']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Fan - Power</td>
 <?php if($gpustat_cfg['DISPFAN']) : ?>
-            <td><span class='gpu1-fan load'></span><div class='usage-disk sys'><span class='gpu1-fanbar'></span><span></span></div></td>
+            <td><span class='gpu2-fan load'></span><div class='usage-disk sys'><span class='gpu2-fanbar'></span><span></span></div></td>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPPWRDRAW']) : ?>
-            <td><span class='gpu1-power load'><span class='gpu1-powerunit'></span></span><div class='usage-disk sys'><span class='gpu1-powerbar'></span><span></span></div></td>
+            <td><span class='gpu2-power load'><span class='gpu2-powerunit'></span></span><div class='usage-disk sys'><span class='gpu2-powerbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
 <?php endif; ?>
 <?php if($gpustat_cfg['DISPCLOCKS']) : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
+        <tr class="dash_gpustat_toggle2 gpu2-enviro">
             <td></td>
             <td>Clocks: Shader - Mem (GHz)</td>
-            <td><span class='gpu1-clock load'></span><div class='usage-disk sys'><span class='gpu1-clockutilbar'></span><span></span></div></td>
-            <td><span class='gpu1-memclock load'></span><div class='usage-disk sys'><span class='gpu1-memclockutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-clock load'></span><div class='usage-disk sys'><span class='gpu2-clockutilbar'></span><span></span></div></td>
+            <td><span class='gpu2-memclock load'></span><div class='usage-disk sys'><span class='gpu2-memclockutilbar'></span><span></span></div></td>
             <td></td>
         </tr>
 <?php endif; ?>
@@ -355,13 +351,13 @@ Icon="gpustat.png"
 </table>
 <?php endif; ?>
 
-<script type="text/javascript" src="/plugins/gpustat/scripts/gpustat.js"></script>
-<?php if (($gpu_unknown = false) || ($gpustat_cfg['GPU1'] != "")) : ?>
+
+<?php if (($gpu_unknown = false) || ($gpustat_cfg['GPU2'] != "")) : ?>
 <script type="text/javascript">
-    $(gpustat_status_gpu1);
+    $(gpustat_status_gpu2);
     if (<?=$gpustat_cfg['UIREFRESH'];?>) {
-        setInterval(gpustat_status_gpu1, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']);?>);
+        setInterval(gpustat_status_gpu2, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT'])+10;?>);
     }
-    $(gpustat_dash(1));
+    $(gpustat_dash(2));
 </script>
 <?php endif; ?>

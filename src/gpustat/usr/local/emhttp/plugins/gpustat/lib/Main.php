@@ -164,6 +164,18 @@ class Main
     }
 
     /**
+     * prase gpu line
+     * [0] name
+     * [1] bus
+     *
+     * @return mixed
+     */
+    public static function praseGPU(string $gpu)
+    { 
+        return explode('|||||', $gpu);
+    }
+
+    /**
      * Triggers regex match all against class variable stdout and places matches in class variable inventory
      *
      * @param string $regex

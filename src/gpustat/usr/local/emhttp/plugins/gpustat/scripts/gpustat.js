@@ -22,30 +22,43 @@
   SOFTWARE.
 */
 
-const gpustat_status = () => {
-    $.getJSON('/plugins/gpustat/gpustatus.php', (data) => {
+const gpustat_status_gpu1 = () => {
+    gpustat_status(1);
+}
+
+const gpustat_status_gpu2 = () => {
+    gpustat_status(2);
+}
+
+const gpustat_status_gpu3 = () => {
+    gpustat_status(3);
+}
+
+
+const gpustat_status = function(_args) {
+    $.getJSON("/plugins/gpustat/gpustatus.php?argv="+_args, (data) => {
         if (data) {
             switch (data["vendor"]) {
                 case 'NVIDIA':
                     // Nvidia Slider Bars
-                    $('.gpu-memclockbar').removeAttr('style').css('width', data["memclock"] / data["memclockmax"] * 100 + "%");
-                    $('.gpu-gpuclockbar').removeAttr('style').css('width', data["clock"] / data["clockmax"] * 100 + "%");
-                    $('.gpu-powerbar').removeAttr('style').css('width', parseInt(data["power"].replace("W","") / data["powermax"] * 100) + "%");
-                    $('.gpu-rxutilbar').removeAttr('style').css('width', parseInt(data["rxutil"] / data["pciemax"] * 100) + "%");
-                    $('.gpu-txutilbar').removeAttr('style').css('width', parseInt(data["txutil"] / data["pciemax"] * 100) + "%");
+                    $('.gpu'+_args+'-memclockbar').removeAttr('style').css('width', data["memclock"] / data["memclockmax"] * 100 + "%");
+                    $('.gpu'+_args+'-gpuclockbar').removeAttr('style').css('width', data["clock"] / data["clockmax"] * 100 + "%");
+                    $('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"].replace("W","") / data["powermax"] * 100) + "%");
+                    $('.gpu'+_args+'-rxutilbar').removeAttr('style').css('width', parseInt(data["rxutil"] / data["pciemax"] * 100) + "%");
+                    $('.gpu'+_args+'-txutilbar').removeAttr('style').css('width', parseInt(data["txutil"] / data["pciemax"] * 100) + "%");
 
                     let nvidiabars = ['util', 'memutil', 'encutil', 'decutil', 'fan'];
                     nvidiabars.forEach(function (metric) {
-                        $('.gpu-'+metric+'bar').removeAttr('style').css('width', data[metric]);
+                        $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                     });
 
                     if (data["appssupp"]) {
                         data["appssupp"].forEach(function (app) {
                             if (data[app + "using"]) {
-                                $('.gpu-img-span-'+app).css('display', "inline");
+                                $('.gpu'+_args+'-img-span-'+app).css('display', "inline");
                                 $('#gpu-'+app).attr('title', "Count: " + data[app+"count"] + " Memory: " + data[app+"mem"] + "MB");
                             } else {
-                                $('.gpu-img-span-'+app).css('display', "none");
+                                $('.gpu'+_args+'-img-span-'+app).css('display', "none");
                                 $('#gpu-'+app).attr('title', "");
                             }
                         });
@@ -55,12 +68,12 @@ const gpustat_status = () => {
                     // Intel Slider Bars
                     let intelbars = ['3drender', 'blitter', 'video', 'videnh', 'powerutil'];
                     intelbars.forEach(function (metric) {
-                        $('.gpu-'+metric+'bar').removeAttr('style').css('width', data[metric]);
+                        $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                     });
                     break;
                 case 'AMD':
-                    $('.gpu-powerbar').removeAttr('style').css('width', parseInt(data["power"] / data["powermax"] * 100) + "%");
-                    $('.gpu-fanbar').removeAttr('style').css('width', parseInt(data["fan"] / data["fanmax"] * 100) + "%");
+                    $('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"] / data["powermax"] * 100) + "%");
+                    $('.gpu'+_args+'-fanbar').removeAttr('style').css('width', parseInt(data["fan"] / data["fanmax"] * 100) + "%");
                     let amdbars = [
                         'util', 'event', 'vertex',
                         'texture', 'shaderexp', 'sequencer',
@@ -69,27 +82,27 @@ const gpustat_status = () => {
                         'gfxtrans', 'memclockutil', 'clockutil'
                     ];
                     amdbars.forEach(function (metric) {
-                        $('.gpu-'+metric+'bar').removeAttr('style').css('width', data[metric]);
+                        $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                     });
                     break;
             }
 
             $.each(data, function (key, data) {
-                $('.gpu-'+key).html(data);
+                $('.gpu'+_args+'-'+key).html(data);
             })
         }
     });
 };
 
-const gpustat_dash = () => {
+const gpustat_dash = function(_args) {
     // append data from the table into the correct one
-    $('#db-box1').append($('.dash_gpustat').html());
+    $("#db-box1").append($(".dash_gpustat"+_args).html());
 
     // reload toggle to get the correct state
-    toggleView('dash_gpustat_toggle', true);
+    toggleView('dash_gpustat_toggle'+_args, true);
 
     // reload sorting to get the stored data (cookie)
-    sortTable($('#db-box1'), $.cookie('db-box1'));
+    sortTable($("#db-box1"), $.cookie("db-box1"));
 }
 
 /*
@@ -97,7 +110,7 @@ TODO: Not currently used due to issue with default reset actually working
 function resetDATA(form) {
     form.VENDOR.value = "nvidia";
     form.TEMPFORMAT.value = "C";
-    form.GPUID.value = "0";
+    form.GPUBUS.value = "0";
     form.DISPCLOCKS.value = "1";
     form.DISPENCDEC.value = "1";
     form.DISPTEMP.value = "1";

@@ -2,9 +2,10 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "gpustat">
 <!ENTITY author    "b3rs3rk">
-<!ENTITY version   "2021.04.24">
+<!ENTITY mod       "thor2002ro">
+<!ENTITY version   "2022.07.15-thor2002ro">
 <!ENTITY launch    "Settings/GPUStatSettings">
-<!ENTITY gitURL    "https://raw.githubusercontent.com/b3rs3rk/&name;-unraid/master">
+<!ENTITY gitURL    "https://raw.githubusercontent.com/thor2002ro/&name;-unraid/master">
 <!ENTITY pluginURL "&gitURL;/&name;.plg">
 <!ENTITY pkgURL    "&gitURL;/pkg">
 <!ENTITY plgPATH   "/boot/config/plugins/&name;">
@@ -14,7 +15,7 @@
 
 <PLUGIN
     name="&name;"
-    author="&author;"
+    author="&author;/&mod;"
     version="&version;"
     min="6.7.1"
     support="https://forums.unraid.net/topic/89453-plugin-gpu-statistics/"
@@ -186,14 +187,18 @@ fi
  <FILE Name="/boot/config/plugins/gpustat/gpustat.cfg">
   <INLINE>
    <![CDATA[
-    VENDOR=""
-    GPUID=""
+    VENDOR1=""
+    VENDOR2=""
+    VENDOR3=""
+    GPU1=""
+    GPU2=""
+    GPU3=""
     TEMPFORMAT="C"
     DISPCLOCKS="1"
     DISPENCDEC="1"
-    DISPPCIUTIL="1"
     DISPTEMP="1"
     DISPFAN="1"
+    DISPPCIUTIL="1"
     DISPPWRDRAW="1"
     DISPPWRSTATE="1"
     DISPTHROTTLE="1"

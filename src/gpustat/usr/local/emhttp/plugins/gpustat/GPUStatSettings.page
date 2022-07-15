@@ -38,21 +38,58 @@ Title="GPU Statistics"
 <form markdown="1" name="gpustat" method="POST" action="/update.php" target="progressFrame">
   <input type="hidden" name="#file" value="gpustat/gpustat.cfg" />
 
-Vendor:
-: <select id="VENDOR" name="VENDOR" size="1">
-    <?=mk_option($gpustat_cfg['VENDOR'], "", "Change Me");?>
-    <?=mk_option($gpustat_cfg['VENDOR'], "amd", "AMD");?>
-    <?=mk_option($gpustat_cfg['VENDOR'], "intel", "Intel");?>
-    <?=mk_option($gpustat_cfg['VENDOR'], "nvidia", "NVIDIA");?>
+Vendor1:
+: <select id="VENDOR1" name="VENDOR1" size="1">
+    <?=mk_option($gpustat_cfg['VENDOR1'], "", "None");?>
+    <?=mk_option($gpustat_cfg['VENDOR1'], "amd", "AMD");?>
+    <?=mk_option($gpustat_cfg['VENDOR1'], "intel", "Intel");?>
+    <?=mk_option($gpustat_cfg['VENDOR1'], "nvidia", "NVIDIA");?>
   </select>
-
-Unit ID for Dashboard:
-: <select id="GPUID" name="GPUID" size="1" length="50">
+GPU1:   <select id="GPU1" name="GPU1" size="1" length="50">
     <?php
-        if (isset($gpustat_data)) {
-            foreach ($gpustat_data AS $gpu) {
+        if (isset($gpustat_data1)) {
+            printf(mk_option($gpustat_cfg['GPU1'], "", "None"));
+            foreach ($gpustat_data1 AS $gpu) {
                 $gpudesc = sprintf('%s: %s - %s', $gpu['id'], $gpu['model'], $gpu['guid']);
-                printf(mk_option($gpustat_cfg['GPUID'], $gpu['guid'], $gpudesc));
+                printf(mk_option($gpustat_cfg['GPU1'], sprintf('%s|||||%s', $gpu['model'], $gpu['guid']), $gpudesc));
+            }
+        }
+    ?>
+</select>
+
+Vendor2:
+: <select id="VENDOR2" name="VENDOR2" size="1">
+    <?=mk_option($gpustat_cfg['VENDOR2'], "", "None");?>
+    <?=mk_option($gpustat_cfg['VENDOR2'], "amd", "AMD");?>
+    <?=mk_option($gpustat_cfg['VENDOR2'], "intel", "Intel");?>
+    <?=mk_option($gpustat_cfg['VENDOR2'], "nvidia", "NVIDIA");?>
+  </select>
+GPU2:   <select id="GPU2" name="GPU2" size="1" length="50">
+    <?php
+        if (isset($gpustat_data2)) {
+            printf(mk_option($gpustat_cfg['GPU2'], "", "None"));
+            foreach ($gpustat_data2 AS $gpu) {
+                $gpudesc = sprintf('%s: %s - %s', $gpu['id'], $gpu['model'], $gpu['guid']);
+                printf(mk_option($gpustat_cfg['GPU2'], sprintf('%s|||||%s', $gpu['model'], $gpu['guid']), $gpudesc));
+            }
+        }
+    ?>
+</select>
+
+Vendor3:
+: <select id="VENDOR3" name="VENDOR3" size="1">
+    <?=mk_option($gpustat_cfg['VENDOR3'], "", "None");?>
+    <?=mk_option($gpustat_cfg['VENDOR3'], "amd", "AMD");?>
+    <?=mk_option($gpustat_cfg['VENDOR3'], "intel", "Intel");?>
+    <?=mk_option($gpustat_cfg['VENDOR3'], "nvidia", "NVIDIA");?>
+  </select>
+GPU3:   <select id="GPU3" name="GPU3" size="1" length="50">
+    <?php
+        if (isset($gpustat_data3)) {
+            printf(mk_option($gpustat_cfg['GPU3'], "", "None"));
+            foreach ($gpustat_data3 AS $gpu) {
+                $gpudesc = sprintf('%s: %s - %s', $gpu['id'], $gpu['model'], $gpu['guid']);
+                printf(mk_option($gpustat_cfg['GPU3'], sprintf('%s|||||%s', $gpu['model'], $gpu['guid']), $gpudesc));
             }
         }
     ?>

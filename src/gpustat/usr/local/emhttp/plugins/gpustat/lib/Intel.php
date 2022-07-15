@@ -86,14 +86,14 @@ class Intel extends Main
     /**
      * Retrieves Intel iGPU statistics
      */
-    public function getStatistics()
+    public function getStatistics(string $gpu)
     {
         if ($this->cmdexists) {
             //Command invokes intel_gpu_top in JSON output mode with an update rate of 5 seconds
             $command = self::STATISTICS_WRAPPER . ES . self::CMD_UTILITY;
             $this->runCommand($command, self::STATISTICS_PARAM, false);
             if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                $this->parseStatistics();
+                $this->parseStatistics($gpu);
             } else {
                 $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
             }
@@ -103,7 +103,7 @@ class Intel extends Main
     /**
      * Loads JSON into array then retrieves and returns specific definitions in an array
      */
-    private function parseStatistics()
+    private function parseStatistics(string $gpu)
     {
         // JSON output from intel_gpu_top with multiple array indexes isn't properly formatted
         $stdout = "[" . str_replace('}{', '},{', str_replace(["\n","\t"], '', $this->stdout)) . "]";
@@ -129,7 +129,7 @@ class Intel extends Main
 
             $this->pageData += [
                 'vendor'        => 'Intel',
-                'name'          => 'Integrated Graphics',
+                'name'          => $this->praseGPU($gpu)[0],
                 '3drender'      => 'N/A',
                 'blitter'       => 'N/A',
                 'interrupts'    => 'N/A',

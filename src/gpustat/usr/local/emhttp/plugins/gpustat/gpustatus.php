@@ -46,23 +46,48 @@ if (!isset($gpustat_cfg)) {
 if (isset($gpustat_inventory) && $gpustat_inventory) {
     $gpustat_cfg['inventory'] = true;
     // Settings page looks for $gpustat_data specifically -- inventory all supported GPU types
-    $gpustat_data = (new Nvidia($gpustat_cfg))->getInventory();
-    $gpustat_data[] = (new Intel($gpustat_cfg))->getInventory();
-    $gpustat_data += (new AMD($gpustat_cfg))->getInventory();
+    $gpustat_data1 = (new Nvidia($gpustat_cfg))->getInventory();
+    $gpustat_data1 += (new Intel($gpustat_cfg))->getInventory();
+    $gpustat_data1 += (new AMD($gpustat_cfg))->getInventory();
 
+    $gpustat_data2 = (new Nvidia($gpustat_cfg))->getInventory();
+    $gpustat_data2 += (new Intel($gpustat_cfg))->getInventory();
+    $gpustat_data2 += (new AMD($gpustat_cfg))->getInventory();
+
+    $gpustat_data3 = (new Nvidia($gpustat_cfg))->getInventory();
+    $gpustat_data3 += (new Intel($gpustat_cfg))->getInventory();
+    $gpustat_data3 += (new AMD($gpustat_cfg))->getInventory();
 } else {
+    if (PHP_SAPI === 'cli') {
+        $argument1 = $argv[1];
+    }
+    else {
+        $argument1 = $_GET['argv'];
+    }
 
-    switch ($gpustat_cfg['VENDOR']) {
+    $GPUNR='';
+    if (isset($argument1)) {
+        $GPUNR=$argument1;
+    } else {
+        $GPUNR='1';
+    }
+
+    if (!isset($gpustat_cfg["GPU{$GPUNR}"])) {
+        echo "not found GPU{$GPUNR}";
+    }
+
+    switch ($gpustat_cfg["VENDOR{$GPUNR}"]) {
         case 'amd':
-            (new AMD($gpustat_cfg))->getStatistics();
+            (new AMD($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
             break;
         case 'intel':
-            (new Intel($gpustat_cfg))->getStatistics();
+            (new Intel($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
             break;
         case 'nvidia':
-            (new Nvidia($gpustat_cfg))->getStatistics();
+            (new Nvidia($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
             break;
         default:
             print_r(Error::get(Error::CONFIG_SETTINGS_NOT_VALID));
     }
 }
+

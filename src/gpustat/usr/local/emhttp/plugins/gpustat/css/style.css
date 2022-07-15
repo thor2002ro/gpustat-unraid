@@ -22,20 +22,20 @@
   SOFTWARE.
 */
 
-#dash_gpustat_settings i, #dash_gpustat_toggle {
+#dash_gpustat_settings i, #dash_gpustat_toggle1, #dash_gpustat_toggle2, #dash_gpustat_toggle3 {
     margin-top: 0;
 }
 
-span.gpu {
+span.gpu1, span.gpu2, span.gpu3 {
     width: 150px;
     display: inline-block;
 }
 
-span.gpu-img-span {
+span.gpu1-img-span, span.gpu2-img-span, span.gpu3-img-span {
     display: none;
 }
 
-.gpu-image {
+.gpu1-image, .gpu2-image, .gpu3-image {
     padding-left: 8px;
     height: 32px;
     width: 32px;

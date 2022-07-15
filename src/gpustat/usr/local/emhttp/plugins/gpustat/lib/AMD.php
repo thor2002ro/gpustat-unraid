@@ -103,15 +103,18 @@ class AMD extends Main
 
     /**
      * Retrieves AMD APU/GPU statistics
+     * 
+     * 
+     * $this->settings['GPUID']
      */
-    public function getStatistics()
+    public function getStatistics(string $gpu)
     {
         if ($this->cmdexists) {
             //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
-            $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->settings['GPUID']);
+            $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->praseGPU($gpu)[1]);
             $this->runCommand($command, self::STATISTICS_PARAM, false);
             if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                $this->parseStatistics();
+                $this->parseStatistics($gpu);
             } else {
                 $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
             }
@@ -122,7 +125,7 @@ class AMD extends Main
      * Retrieves AMD APU/GPU Temperature/Fan/Power/Voltage readings from lm-sensors
      * @returns array
      */
-    private function getSensorData(): array
+    private function getSensorData(string $gpubus): array
     {
         $sensors = [];
 
@@ -132,7 +135,7 @@ class AMD extends Main
             if ($this->settings['TEMPFORMAT'] == 'F') {
                 $tempFormat = '-f';
             }
-            $chip = sprintf('amdgpu-pci-%1s00', $this->settings['GPUID']);
+            $chip = sprintf('amdgpu-pci-%1s00', $gpubus);
             $command = sprintf('%0s %1s %2s', self::TEMP_UTILITY, $chip, $tempFormat);
             $this->runCommand($command, self::TEMP_PARAM, false);
             if (!empty($this->stdout) && strlen($this->stdout) > 0) {
@@ -163,6 +166,12 @@ class AMD extends Main
                             if (isset($data['power1']['power1_cap'])) {
                                 $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
                             }
+                        } else if (isset($data['PPT']['power1_average'])) {
+                            $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
+                            $sensors['powerunit'] = 'W';
+                            if (isset($data['PPT']['power1_cap'])) {
+                                $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
+                            }
                         }
                         if (isset($data['vddgfx']['in0_input'])) {
                             $sensors['voltage'] = $this->roundFloat($data['vddgfx']['in0_input'], 2);
@@ -179,11 +188,11 @@ class AMD extends Main
     /**
      * Loads radeontop STDOUT and parses into an associative array for mapping to plugin variables
      */
-    private function parseStatistics()
+    private function parseStatistics(string $gpu)
     {
         $this->pageData += [
             'vendor'        => 'AMD',
-            'name'          => 'APU/GPU',
+            'name'          => $this->praseGPU($gpu)[0],
             'event'         => 'N/A',
             'vertex'        => 'N/A',
             'texture'       => 'N/A',
@@ -227,7 +236,7 @@ class AMD extends Main
         } else {
             $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_ENOUGH, "Count: $count");
         }
-        $this->pageData = array_merge($this->pageData, $this->getSensorData());
+        $this->pageData = array_merge($this->pageData, $this->getSensorData($this->praseGPU($gpu)[1]));
 
         $this->echoJson();
     }
