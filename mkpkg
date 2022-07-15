@@ -1,0 +1,19 @@
+#!/bin/bash
+
+START="$(pwd)"
+
+PLUGIN=gpustat
+ARCHIVE="$START/pkg"
+PLG_FILE="$PLUGIN.plg"
+VERSION=$(date +"%Y.%m.%d")-thor2002ro
+ARCH="-x86_64"
+PACKAGE="$ARCHIVE/$PLUGIN-$VERSION$ARCH.txz"
+MD5="$ARCHIVE/$PLUGIN-$VERSION$ARCH.md5"
+
+sed -i -e "s#\(ENTITY\s*version[^\"]*\).*#\1\"${VERSION}\">#" "$PLG_FILE"
+sed -i "/##&name/a\###${VERSION}" "$PLG_FILE"
+
+cd "$START/src/$PLUGIN"
+"./../../makepkg" -l y -c y "$PACKAGE"
+cd "$ARCHIVE/"
+md5sum $(basename "$PACKAGE") >"$MD5"
