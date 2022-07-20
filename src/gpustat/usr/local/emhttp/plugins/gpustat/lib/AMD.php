@@ -60,6 +60,11 @@ class AMD extends Main
     const TEMP_UTILITY = 'sensors';
     const TEMP_PARAM = '-j 2>errors';
 
+    const LSPCI_PARAM = ' -vv -s ';
+    const LSPCI_PARAM2 = ': -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"';
+    const LSPCI_REGEX =
+        '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.+?),\s[Width]*\s(?P<pcie_widthmax>.+?),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.+?)\s\((?P<pcie_downspeed>.*)\),\s[Width]*\s(?P<pcie_width>.+?)\s\((?P<pcie_downwidth>.*)\).*+\n.+Kernel driver in use:\s(?P<driver>.+?)\n/imU';
+
     /**
      * AMD constructor.
      * @param array $settings
@@ -84,7 +89,7 @@ class AMD extends Main
             if ($this->cmdexists) {
                 $this->runCommand(self::INVENTORY_UTILITY, self::INVENTORY_PARAM, false);
                 if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                    $this->parseInventory(self::INVENTORY_REGEX);
+                    $this->inventory = $this->parseInventory(self::INVENTORY_REGEX);
                 }
                 if (!empty($this->inventory)) {
                     foreach ($this->inventory AS $gpu) {
@@ -186,6 +191,39 @@ class AMD extends Main
     }
 
     /**
+     * Retrieves AMD inventory using lspci and returns an array
+     *
+     * @return array
+     */
+    public function getpciedata(string $gpubus): array
+    {
+        $result = [];
+        if ($this->cmdexists) {
+            $this->checkCommand(self::INVENTORY_UTILITY, false);
+            if ($this->cmdexists) {
+                $this->runCommand(self::INVENTORY_UTILITY, sprintf("%s%s%s", self::LSPCI_PARAM, $gpubus, self::LSPCI_PARAM2), false);
+                if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+                    $this->gpu_lspci = $this->parseInventory(self::LSPCI_REGEX);
+                }
+                if (!empty($this->gpu_lspci)) {
+                    foreach ($this->gpu_lspci AS $gpu) {
+                        $result[] = [
+                            'pciegenmax'        => $gpu['pcie_speedmax'],
+                            'pciewidthmax'      => $gpu['pcie_widthmax'],
+                            'pciegen'           => $gpu['pcie_speed'],
+                            'pcie_downspeed'    => $gpu['pcie_downspeed'],
+                            'pciewidth'         => $gpu['pcie_width'],
+                            'pcie_downwidth'    => $gpu['pcie_downwidth'],
+                            'driver'            => $gpu['driver'],
+                        ];
+                    }
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Loads radeontop STDOUT and parses into an associative array for mapping to plugin variables
      */
     private function parseStatistics(string $gpu)
@@ -203,6 +241,9 @@ class AMD extends Main
             'primassem'     => 'N/A',
             'depthblk'      => 'N/A',
             'colorblk'      => 'N/A',
+            'perfstate'     => 'N/A',
+            'throttled'     => 'N/A',
+            'thrtlrsn'      => '',
         ];
 
         // radeontop data doesn't follow a standard object format -- need to parse CSV and then explode by spaces
@@ -237,6 +278,8 @@ class AMD extends Main
             $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_ENOUGH, "Count: $count");
         }
         $this->pageData = array_merge($this->pageData, $this->getSensorData($this->praseGPU($gpu)[1]));
+
+        $this->pageData = array_merge($this->pageData, $this->getpciedata($this->praseGPU($gpu)[1]));
 
         $this->echoJson();
     }

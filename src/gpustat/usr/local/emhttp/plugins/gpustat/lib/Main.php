@@ -56,6 +56,11 @@ class Main
     /**
      * @var array
      */
+    protected $gpu_lspci;
+
+    /**
+     * @var array
+     */
     protected $pageData;
 
     /**
@@ -182,7 +187,9 @@ class Main
      */
     protected function parseInventory(string $regex = '')
     {
-        preg_match_all($regex, $this->stdout, $this->inventory, PREG_SET_ORDER);
+        $ret = [];
+        preg_match_all($regex, $this->stdout, $ret, PREG_SET_ORDER);
+        return $ret;
     }
 
     /**

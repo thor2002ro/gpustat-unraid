@@ -89,7 +89,7 @@ Icon="gpustat.png"
         </tr>
 <?php if ($gpu_unknown) : printf("\t</tbody>\n</table>"); else : ?>
         <tr class="dash_gpustat_toggle1 gpu1-enviro">
-<?php if ($gpu_nv) : ?>
+<?php if ($gpu_amd) : ?>
 <?php if($gpustat_cfg['DISPPCIUTIL']) : ?>
             <td></td>
             <td></td>
