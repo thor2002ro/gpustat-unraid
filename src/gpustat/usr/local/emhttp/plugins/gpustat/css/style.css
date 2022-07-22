@@ -45,10 +45,6 @@ span.gpu-img-span {
     display: none;
 }
 
-.redvalue {
-    color: red;
-}
-
 .gpu-stats-primary {
     width:80px;
     display:table-cell;

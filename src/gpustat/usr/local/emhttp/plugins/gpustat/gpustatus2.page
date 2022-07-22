@@ -63,12 +63,12 @@ Icon="gpustat.png"
             <td></td>
             <td class='next' colspan='3'>
                 <i class='icon-hardware'></i>
-                <div class='section'>GPU2 - <span class='gpu2-vendor'></span>&nbsp;<span class='gpu2-name'></span>&nbsp;<span>(<span id='gpu2-passedthrough' class='gpu2-passedthrough'></span>)</span>&nbsp;<br>
+                <div class='section'>GPU2 - <span class='gpu2-vendor'></span>&nbsp;<span class='gpu2-name'></span>&nbsp;<span>(<span class='gpu2-passedthrough'></span>)</span>&nbsp;<br>
 <?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>"); else : ?>
-                <div style="display: table;"><div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span id='gpu2-util' class='gpu2-util'></span></div>
+                <div style="display: table;"><div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span class='gpu2-util'></span></div>
 <?php if ($gpu_nv || $gpu_amd) : ?>
 <?php if($gpustat_cfg['DISPTEMP']) : ?>
-                <div title="Temperature" class="gpu-stats-primary"><span class="fa fa-thermometer-half fa-2x"></span><span id='gpu2-temp' class='gpu2-temp'></span></div>
+                <div title="Temperature" class="gpu-stats-primary"><span class="fa fa-thermometer-half fa-2x"></span><span class='gpu2-temp'></span></div>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($gpu_nv) : ?>

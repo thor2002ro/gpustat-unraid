@@ -93,8 +93,9 @@ const gpustat_status = function(_args) {
             
             change_visibility('#gpu'+_args+'-'+'pciegen-arrow', data["pcie_downspeed"]);
             change_visibility('#gpu'+_args+'-'+'pciewidth-arrow', data["pcie_downwidth"]);
-            change_color('#gpu'+_args+'-'+'util', data["util"], 80);
-            change_color('#gpu'+_args+'-'+'temp', data["temp"], data["tempmax"]-15);
+            change_color('.gpu'+_args+'-'+'util', data["util"], 80);
+            change_color('.gpu'+_args+'-'+'temp', data["temp"], data["tempmax"]-15);
+            change_color_string('.gpu'+_args+'-'+'passedthrough', data["passedthrough"], "Passthrough");
         }
     });
 };
@@ -110,18 +111,27 @@ const gpustat_dash = function(_args) {
     sortTable($("#db-box1"), $.cookie("db-box1"));
 }
 
-function change_visibility(key, value){ 
+function change_visibility(key, value) {
     $(key).removeClass('hidden');
     if (parseInt(value) == 0){ 
         $(key).addClass('hidden');
     } 
 }
 
-function change_color(key, value, redvalue){ 
-    $(key).removeClass('redvalue');
+function change_color(key, value, redvalue) {
     if (parseInt(value) >= parseInt(redvalue)){ 
-        $(key).addClass('redvalue');
-    } 
+        $(key).css({'color':'red'});
+    } else {
+        $(key).css({'color':''});
+    }
+}
+
+function change_color_string(key, value, redvalue) {
+    if (value === redvalue){ 
+        $(key).css({'color':'magenta'});
+    } else {
+        $(key).css({'color':'green'});
+    }
 }
 
 /*
