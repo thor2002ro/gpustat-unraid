@@ -67,19 +67,20 @@ Icon="gpustat.png"
             <td></td>
             <td class='next' colspan='3'>
                 <i class='icon-hardware'></i>
-                <div class='section'>GPU1 - <span class='gpu1-vendor'></span>&nbsp;<span class='gpu1-name'></span><br>
+                <div class='section'>GPU1 - <span class='gpu1-vendor'></span>&nbsp;<span class='gpu1-name'></span>&nbsp;<span>(<span id='gpu1-passedthrough' class='gpu1-passedthrough'></span>)</span>&nbsp;<br>
 <?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>"); else : ?>
-                    <span id='load'>Load: <span class='gpu1-util'></span></span>
+                <div style="display: table;"><div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span id='gpu1-util' class='gpu1-util'></span></div>
 <?php if ($gpu_nv || $gpu_amd) : ?>
 <?php if($gpustat_cfg['DISPTEMP']) : ?>
-                    <span>Temperature: <span class='gpu1-temp'></span></span>
+                <div title="Temperature" class="gpu-stats-primary"><span class="fa fa-thermometer-half fa-2x"></span><span id='gpu1-temp' class='gpu1-temp'></span></div>
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($gpu_nv) : ?>
 <?php if ($gpustat_cfg['DISPSESSIONS']) : ?>
-                    &emsp;&ensp;<span>Processes: <span class='gpu1-sessions'></span></span>
+                <div title="Processes" class="gpu-stats-primary"><span class="fa fa-slack fa-2x"></span><span class='gpu1-sessions'></span></div>
 <?php endif; ?>
 <?php endif; ?>
+                <div title="PCIe Gen" class="gpu-stats-primary"><span class="fa fa-cogs fa-2x"></span><span class='gpu1-pciegen'></span><span id='gpu1-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span>&nbsp;-&nbsp;<span class='gpu1-pciewidth'></span><span id='gpu1-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span></div></div>
                 </div>
 <?php endif; ?>
                 <i class='fa fa-fw chevron mt0' id='dash_gpustat_toggle1' onclick='toggleChevron("dash_gpustat_toggle1",0)'></i>
@@ -89,14 +90,6 @@ Icon="gpustat.png"
         </tr>
 <?php if ($gpu_unknown) : printf("\t</tbody>\n</table>"); else : ?>
         <tr class="dash_gpustat_toggle1 gpu1-enviro">
-<?php if ($gpu_amd) : ?>
-<?php if($gpustat_cfg['DISPPCIUTIL']) : ?>
-            <td></td>
-            <td></td>
-            <td>&emsp;&ensp;<span id='gpu1-pciegen'>PCIe Gen (Max): <span class='gpu1-pciegen'></span>&nbsp;(<span class='gpu1-pciegenmax'></span>)</span></td>
-            <td>&emsp;&ensp;<span id='gpu1-pciewidth'>Lanes (Max): <span class='gpu1-pciewidth'></span>&nbsp;(<span class='gpu1-pciewidthmax'></span>)</span></td>
-<?php endif; ?>
-<?php endif; ?>
             <td></td>
         </tr>
 <?php if ($gpu_nv) : ?>
@@ -168,8 +161,8 @@ Icon="gpustat.png"
             <td>Active Apps</td>
             <td colspan="2">
 <?php foreach($apps as $app): ?>
-                <span id="gpu1-img-span-<?= $app; ?>" class='gpu1-img-span gpu1-img-span-<?= $app; ?>'>
-                    <img id='gpu1-<?= $app; ?>' class='gpu1-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
+                <span id="gpu-img-span-<?= $app; ?>" class='gpu-img-span gpu-img-span-<?= $app; ?>'>
+                    <img id='gpu1-<?= $app; ?>' class='gpu-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
                 </span>
 <?php endforeach; ?>
             </td>

@@ -31,12 +31,25 @@ span.gpu1, span.gpu2, span.gpu3 {
     display: inline-block;
 }
 
-span.gpu1-img-span, span.gpu2-img-span, span.gpu3-img-span {
+span.gpu-img-span {
     display: none;
 }
 
-.gpu1-image, .gpu2-image, .gpu3-image {
+.gpu-image {
     padding-left: 8px;
     height: 32px;
     width: 32px;
+}
+
+.hidden {
+    display: none;
+}
+
+.redvalue {
+    color: red;
+}
+
+.gpu-stats-primary {
+    width:80px;
+    display:table-cell;
 }

@@ -86,7 +86,8 @@ const gpustat_status = function(_args) {
                     });
                     break;
             }
-
+            change_visibility('#gpu'+_args+'-'+'pciegen-arrow', data["pcie_downspeed"]);
+            change_visibility('#gpu'+_args+'-'+'pciewidth-arrow', data["pcie_downwidth"]);
             $.each(data, function (key, data) {
                 $('.gpu'+_args+'-'+key).html(data);
             })
@@ -105,6 +106,12 @@ const gpustat_dash = function(_args) {
     sortTable($("#db-box1"), $.cookie("db-box1"));
 }
 
+function change_visibility(key, value){ 
+    $(key).removeClass('hidden');
+    if (value == 0){ 
+        $(key).addClass('hidden');
+    } 
+}
 /*
 TODO: Not currently used due to issue with default reset actually working
 function resetDATA(form) {

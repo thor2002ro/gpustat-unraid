@@ -176,8 +176,31 @@ class Main
      * @return mixed
      */
     public static function praseGPU(string $gpu)
-    { 
+    {
         return explode('|||||', $gpu);
+    }
+
+    /**
+     * prase lspci gpu speed to pcie gen
+     * return pcie gen nr
+     *
+     * @return mixed
+     */
+    public static function prasePCIEgen(float $pciespeed_in)
+    {
+        if ($pciespeed_in=='2.5') {
+            return 1;
+        } else if ($pciespeed_in=='5') {
+            return 2;
+        } else if ($pciespeed_in=='8') {
+            return 3;
+        } else if ($pciespeed_in=='16') {
+            return 4;
+        } else if ($pciespeed_in=='32' || $pciespeed_in=='25') {
+            return 5;
+        } else {
+            return 0;
+        }
     }
 
     /**

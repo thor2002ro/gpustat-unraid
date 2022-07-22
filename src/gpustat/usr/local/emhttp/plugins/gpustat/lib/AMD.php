@@ -63,7 +63,7 @@ class AMD extends Main
     const LSPCI_PARAM = ' -vv -s ';
     const LSPCI_PARAM2 = ': -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"';
     const LSPCI_REGEX =
-        '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.+?),\s[Width]*\s(?P<pcie_widthmax>.+?),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.+?)\s\((?P<pcie_downspeed>.*)\),\s[Width]*\s(?P<pcie_width>.+?)\s\((?P<pcie_downwidth>.*)\).*+\n.+Kernel driver in use:\s(?P<driver>.+?)\n/imU';
+        '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.*),\s[Width]*\s(?P<pcie_widthmax>.*),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.*)\s\((?P<pcie_downspeed>.*)\),\s[Width]*\s(?P<pcie_width>.*)\s\((?P<pcie_downwidth>.*)\).*+\n.+Kernel driver in use:\s(?P<driver>.*)\n/imU';
 
     /**
      * AMD constructor.
@@ -191,7 +191,7 @@ class AMD extends Main
     }
 
     /**
-     * Retrieves AMD inventory using lspci and returns an array
+     * Retrieves pcie and driver from lspci and returns an array
      *
      * @return array
      */
@@ -207,14 +207,15 @@ class AMD extends Main
                 }
                 if (!empty($this->gpu_lspci)) {
                     foreach ($this->gpu_lspci AS $gpu) {
-                        $result[] = [
-                            'pciegenmax'        => $gpu['pcie_speedmax'],
+                        $result = [
+                            'pciegenmax'        => (float) $this->prasePCIEgen((float) $this->stripText('GT\/s', $gpu['pcie_speedmax'])),
                             'pciewidthmax'      => $gpu['pcie_widthmax'],
-                            'pciegen'           => $gpu['pcie_speed'],
-                            'pcie_downspeed'    => $gpu['pcie_downspeed'],
+                            'pciegen'           => (float) $this->prasePCIEgen((float) $this->stripText('GT\/s', $gpu['pcie_speed'])),
+                            'pcie_downspeed'    => (int) ($gpu['pcie_downspeed'] == 'ok' ? 0 : 1),
                             'pciewidth'         => $gpu['pcie_width'],
-                            'pcie_downwidth'    => $gpu['pcie_downwidth'],
+                            'pcie_downwidth'    => (int) ($gpu['pcie_downwidth'] == 'ok' ? 0 : 1),
                             'driver'            => $gpu['driver'],
+                            'passedthrough'     => ($gpu['driver'] == 'vfio_pci' ? "Passthrough" : "Normal"),
                         ];
                     }
                 }
