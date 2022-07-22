@@ -83,14 +83,18 @@ const gpustat_status = function(_args) {
                     ];
                     amdbars.forEach(function (metric) {
                         $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
-                    });
+                    });                    
                     break;
             }
-            change_visibility('#gpu'+_args+'-'+'pciegen-arrow', data["pcie_downspeed"]);
-            change_visibility('#gpu'+_args+'-'+'pciewidth-arrow', data["pcie_downwidth"]);
+
             $.each(data, function (key, data) {
                 $('.gpu'+_args+'-'+key).html(data);
             })
+            
+            change_visibility('#gpu'+_args+'-'+'pciegen-arrow', data["pcie_downspeed"]);
+            change_visibility('#gpu'+_args+'-'+'pciewidth-arrow', data["pcie_downwidth"]);
+            change_color('#gpu'+_args+'-'+'util', data["util"], 80);
+            change_color('#gpu'+_args+'-'+'temp', data["temp"], data["tempmax"]-15);
         }
     });
 };
@@ -108,10 +112,18 @@ const gpustat_dash = function(_args) {
 
 function change_visibility(key, value){ 
     $(key).removeClass('hidden');
-    if (value == 0){ 
+    if (parseInt(value) == 0){ 
         $(key).addClass('hidden');
     } 
 }
+
+function change_color(key, value, redvalue){ 
+    $(key).removeClass('redvalue');
+    if (parseInt(value) >= parseInt(redvalue)){ 
+        $(key).addClass('redvalue');
+    } 
+}
+
 /*
 TODO: Not currently used due to issue with default reset actually working
 function resetDATA(form) {
