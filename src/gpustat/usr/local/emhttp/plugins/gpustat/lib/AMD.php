@@ -158,29 +158,32 @@ class AMD extends Main
                     }
                     if ($this->settings['DISPFAN']) {
                         if (isset($data['fan1']['fan1_input'])) {
-                            $sensors['fan'] = $this->roundFloat($data['fan1']['fan1_input']);
+                            $sensors['fan_raw'] = $this->roundFloat($data['fan1']['fan1_input']);
                             if (isset($data['fan1']['fan1_max'])) {
-                                $sensors['fanmax'] = $this->roundFloat($data['fan1']['fan1_max']);
+                                $sensors['fanmax_raw'] = $this->roundFloat($data['fan1']['fan1_max']);
                             }
+                            $sensors['fanunit'] = 'rpm';
+                            $sensors['fan'] = ($this->roundFloat($sensors['fan_raw'] / $sensors['fanmax_raw'] * 100)) . "%";
                         }
                     }
                     if ($this->settings['DISPPWRDRAW']) {
                         if (isset($data['power1']['power1_average'])) {
-                            $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
-                            $sensors['powerunit'] = 'W';
+                            $sensors['power_raw'] = $this->roundFloat($data['power1']['power1_average'], 1);
                             if (isset($data['power1']['power1_cap'])) {
-                                $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
+                                $sensors['powermax_raw'] = $this->roundFloat($data['power1']['power1_cap'], 1);
                             }
                         } else if (isset($data['PPT']['power1_average'])) {
-                            $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
-                            $sensors['powerunit'] = 'W';
+                            $sensors['power_raw'] = $this->roundFloat($data['PPT']['power1_average'], 1);
                             if (isset($data['PPT']['power1_cap'])) {
-                                $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
-                            }
+                                $sensors['powermax_raw'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
+                            }                            
                         }
+                        $sensors['powerunit'] = 'w';
+                        $sensors['power'] = ($this->roundFloat($sensors['power_raw'] / $sensors['powermax_raw'] * 100)) . "%";
+
                         if (isset($data['vddgfx']['in0_input'])) {
+                            $sensors['voltageunit'] = 'v';
                             $sensors['voltage'] = $this->roundFloat($data['vddgfx']['in0_input'], 2);
-                            $sensors['voltageunit'] = 'V';
                         }
                     }
                 }
@@ -208,9 +211,9 @@ class AMD extends Main
                 if (!empty($this->gpu_lspci)) {
                     foreach ($this->gpu_lspci AS $gpu) {
                         $result = [
-                            'pciegenmax'        => (float) $this->prasePCIEgen((float) $this->stripText('GT\/s', $gpu['pcie_speedmax'])),
+                            'pciegenmax'        => (int) $this->prasePCIEgen(floatval($gpu['pcie_speedmax'])),
                             'pciewidthmax'      => $gpu['pcie_widthmax'],
-                            'pciegen'           => (float) $this->prasePCIEgen((float) $this->stripText('GT\/s', $gpu['pcie_speed'])),
+                            'pciegen'           => (int) $this->prasePCIEgen(floatval($gpu['pcie_speed'])),
                             'pcie_downspeed'    => (int) ($gpu['pcie_downspeed'] == 'ok' ? 0 : 1),
                             'pciewidth'         => $gpu['pcie_width'],
                             'pcie_downwidth'    => (int) ($gpu['pcie_downwidth'] == 'ok' ? 0 : 1),
