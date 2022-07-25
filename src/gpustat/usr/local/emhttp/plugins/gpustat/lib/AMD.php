@@ -215,7 +215,7 @@ class AMD extends Main
                             'pciewidth'         => $gpu['pcie_width'],
                             'pcie_downwidth'    => (int) ($gpu['pcie_downwidth'] == 'ok' ? 0 : 1),
                             'driver'            => $gpu['driver'],
-                            'passedthrough'     => ($gpu['driver'] == 'vfio_pci' ? "Passthrough" : "Normal"),
+                            'passedthrough'     => ($gpu['driver'] == 'vfio-pci' ? "Passthrough" : "Normal"),
                         ];
                     }
                 }
