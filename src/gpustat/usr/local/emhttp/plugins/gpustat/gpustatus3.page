@@ -50,6 +50,10 @@ Icon="gpustat.png"
             $gpu_unknown = true;
             $unknown_msg = "Default vendor set - Change vendor in GPUStat settings page and apply.";
     }
+
+    //$gpu_nv = true;
+    //$gpu_intel = true;
+    //$gpu_amd = true;
 ?>
 
 <style type="text/css">
@@ -91,10 +95,9 @@ Icon="gpustat.png"
 <?php if ($gpu_nv) : ?>
         <tr class="dash_gpustat_toggle3 gpu3-enviro">
             <td></td>
-            <td>Load - Memory</td>
-            <td><span class='gpu3-util load'></span><div class='usage-disk sys'><span class='gpu3-utilbar'></span><span></span></div></td>
+            <td>Memory</td>
 <?php if($gpustat_cfg['DISPMEMUTIL']) : ?>
-            <td><span class='gpu3-memutil load'></span><div class='usage-disk sys'><span class='gpu3-memutilbar'></span><span></span></div></td>
+            <td colspan="2"><span class='gpu3-memutil load'></span><div class='usage-disk sys'><span class='gpu3-memutilbar'></span><span></span></div></td>
 <?php endif; ?>
             <td></td>
         </tr>
@@ -107,10 +110,12 @@ Icon="gpustat.png"
             <td></td>
         </tr>
 <?php endif; ?>
+<?php endif; ?>
+<?php if ($gpu_nv || $gpu_amd) : ?>
 <?php if($gpustat_cfg['DISPCLOCKS']) : ?>
         <tr class="dash_gpustat_toggle3 gpu3-enviro">
             <td></td>
-            <td>GPU - Memory (MHz)</td>
+            <td>GPU Clock - Memory (MHz)</td>
             <td><span class='gpu3-clock load'></span><div class='usage-disk sys'><span class='gpu3-gpuclockbar'></span><span></span></div></td>
             <td><span class='gpu3-memclock load'></span><div class='usage-disk sys'><span class='gpu3-memclockbar'></span><span></span></div></td>
             <td></td>
@@ -119,7 +124,7 @@ Icon="gpustat.png"
 <?php if($gpustat_cfg['DISPFAN'] || $gpustat_cfg['DISPPWRDRAW']) : ?>
         <tr class="dash_gpustat_toggle3 gpu3-enviro">
             <td></td>
-            <td>Fan - Power</td>
+            <td>Fan (RPM) - Power (W)</td>
 <?php if($gpustat_cfg['DISPFAN']) : ?>
             <td><span class='gpu3-fan load'></span><div class='usage-disk sys'><span class='gpu3-fanbar'></span><span></span></div></td>
 <?php endif; ?>
@@ -129,6 +134,8 @@ Icon="gpustat.png"
             <td></td>
         </tr>
 <?php endif; ?>
+<?php endif; ?>
+<?php if ($gpu_nv) : ?>
 <?php if($gpustat_cfg['DISPPCIUTIL']) : ?>
         <tr class="dash_gpustat_toggle3 gpu3-enviro">
             <td></td>
@@ -233,12 +240,6 @@ Icon="gpustat.png"
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($gpu_amd) : ?>
-        <tr class="dash_gpustat_toggle3 gpu3-enviro">
-            <td></td>
-            <td>GPU Load</td>
-            <td colspan="2"><span class='gpu3-util load'></span><div class='usage-disk sys'><span class='gpu3-utilbar'></span><span></span></div></td>
-            <td></td>
-        </tr>
 <?php if($gpustat_cfg['DISPGFXTRANS'] || $gpustat_cfg['DISPMEMUTIL']) : ?>
         <tr class="dash_gpustat_toggle3 gpu3-enviro">
             <td></td>
@@ -317,39 +318,16 @@ Icon="gpustat.png"
             <td></td>
         </tr>
 <?php endif; ?>
-<?php if($gpustat_cfg['DISPFAN'] || $gpustat_cfg['DISPPWRDRAW']) : ?>
-        <tr class="dash_gpustat_toggle3 gpu3-enviro">
-            <td></td>
-            <td>Fan - Power</td>
-<?php if($gpustat_cfg['DISPFAN']) : ?>
-            <td><span class='gpu3-fan load'></span><div class='usage-disk sys'><span class='gpu3-fanbar'></span><span></span></div></td>
-<?php endif; ?>
-<?php if($gpustat_cfg['DISPPWRDRAW']) : ?>
-            <td><span class='gpu3-power load'><span class='gpu3-powerunit'></span></span><div class='usage-disk sys'><span class='gpu3-powerbar'></span><span></span></div></td>
-<?php endif; ?>
-            <td></td>
-        </tr>
-<?php endif; ?>
-<?php if($gpustat_cfg['DISPCLOCKS']) : ?>
-        <tr class="dash_gpustat_toggle3 gpu3-enviro">
-            <td></td>
-            <td>Clocks: Shader - Mem (GHz)</td>
-            <td><span class='gpu3-clock load'></span><div class='usage-disk sys'><span class='gpu3-clockutilbar'></span><span></span></div></td>
-            <td><span class='gpu3-memclock load'></span><div class='usage-disk sys'><span class='gpu3-memclockutilbar'></span><span></span></div></td>
-            <td></td>
-        </tr>
-<?php endif; ?>
 <?php endif; ?>
     </tbody>
 </table>
 <?php endif; ?>
 
-
 <?php if (($gpu_unknown = false) || ($gpustat_cfg['GPU3'] != "")) : ?>
 <script type="text/javascript">
     $(gpustat_status_gpu3);
     if (<?=$gpustat_cfg['UIREFRESH'];?>) {
-        setInterval(gpustat_status_gpu3, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT'])+20;?>);
+        setInterval(gpustat_status_gpu3, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']+600);?>);
     }
     $(gpustat_dash(3));
 </script>
