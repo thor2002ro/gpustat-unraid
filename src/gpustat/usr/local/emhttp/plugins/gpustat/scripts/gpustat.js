@@ -38,6 +38,7 @@ const gpustat_status_gpu3 = () => {
 const gpustat_status = function(_args) {
     $.getJSON("/plugins/gpustat/gpustatus.php?argv="+_args, (data) => {
         if (data) {
+
             switch (data["vendor"]) {
                 case 'NVIDIA':
                     // Nvidia Slider Bars
@@ -91,7 +92,7 @@ const gpustat_status = function(_args) {
                 $('.gpu'+_args+'-'+key+'bar').removeAttr('style').css('width', value);
             
                 if (!$('.gpu'+_args+'-'+key).parent().hasClass('gpu-stats-primary') && $(data[key+'_raw']).length > 0 && $(data[key+'max'+'_raw']).length > 0) {
-                    $('.gpu'+_args+'-'+key).parent().attr('title', (data[key+'_raw']+' / '+data[key+'max'+'_raw']+' '+data[key+'unit']));
+                    $('.gpu'+_args+'-'+key).parent().attr('title', (value+' - '+data[key+'_raw']+' / '+data[key+'max'+'_raw']+' '+data[key+'unit']));
                     $('.gpu'+_args+'-'+key).html(data[key+'_raw']);
                 } else if (!$('.gpu'+_args+'-'+key).parent().hasClass('gpu-stats-primary')) {
                     $('.gpu'+_args+'-'+key).parent().attr('title', (value));
