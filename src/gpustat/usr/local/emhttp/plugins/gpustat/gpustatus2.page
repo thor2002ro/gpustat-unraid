@@ -80,7 +80,7 @@ Icon="gpustat.png"
                 <div title="Processes" class="gpu-stats-primary"><span class="fa fa-slack fa-2x"></span><span class='gpu2-sessions'></span></div>
 <?php endif; ?>
 <?php endif; ?>
-                <div title="PCIe Gen" class="gpu-stats-primary"><span class="fa fa-cogs fa-2x"></span><span class='gpu2-pciegen'></span><span id='gpu2-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span>&nbsp;-&nbsp;<span class='gpu2-pciewidth'></span><span id='gpu2-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span></div></div>
+                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu2-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu2-pciegen'></span><span id='gpu2-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span>&nbsp;-&nbsp;<span class='gpu2-pciewidth'></span><span id='gpu2-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span></div></div>
                 </div>
 <?php endif; ?>
                 <i class='fa fa-fw chevron mt0' id='dash_gpustat_toggle2' onclick='toggleChevron("dash_gpustat_toggle2",0)'></i>

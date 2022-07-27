@@ -103,8 +103,10 @@ const gpustat_status = function(_args) {
             
             change_visibility('#gpu'+_args+'-'+'pciegen-arrow', data["pcie_downspeed"]);
             change_visibility('#gpu'+_args+'-'+'pciewidth-arrow', data["pcie_downwidth"]);
-            change_color('.gpu'+_args+'-'+'util', data["util"], 80);
-            change_color('.gpu'+_args+'-'+'temp', data["temp"], data["tempmax"]-15);
+            change_color('.gpu'+_args+'-'+'util', data["util"], 80, 'red');
+            change_color('.gpu'+_args+'-'+'temp', data["temp"], data["tempmax"]-15, 'red');
+            change_color('#gpu'+_args+'-'+'pcie', data["bridge_bus"], 0, 'brown');
+            change_tooltip($('#gpu'+_args+'-'+'pcie').parent(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:'+data["bridge_bus"]+')');
             change_color_string('.gpu'+_args+'-'+'passedthrough', data["passedthrough"], "Passthrough");
         }
     });
@@ -128,11 +130,17 @@ function change_visibility(key, value) {
     } 
 }
 
-function change_color(key, value, redvalue) {
+function change_color(key, value, redvalue, color) {
     if (parseInt(value) >= parseInt(redvalue)){ 
-        $(key).css({'color':'red'});
+        $(key).css({'color':(color)});
     } else {
         $(key).css({'color':''});
+    }
+}
+
+function change_tooltip(key, value, redvalue, title) {
+    if (parseInt(value) >= parseInt(redvalue)){ 
+        $(key).attr('title', (title));
     }
 }
 

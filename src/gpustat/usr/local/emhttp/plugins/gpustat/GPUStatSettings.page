@@ -51,7 +51,7 @@ GPU1:   <select id="GPU1" name="GPU1" size="1" length="50">
             printf(mk_option($gpustat_cfg['GPU1'], "", "None"));
             foreach ($gpustat_data1 AS $gpu) {
                 $gpudesc = sprintf('%s: %s - %s', $gpu['id'], $gpu['model'], $gpu['guid']);
-                printf(mk_option($gpustat_cfg['GPU1'], sprintf('%s|||||%s', $gpu['model'], $gpu['guid']), $gpudesc));
+                printf(mk_option($gpustat_cfg['GPU1'], sprintf('%s|||||%s|||||%s', $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
             }
         }
     ?>
@@ -70,7 +70,7 @@ GPU2:   <select id="GPU2" name="GPU2" size="1" length="50">
             printf(mk_option($gpustat_cfg['GPU2'], "", "None"));
             foreach ($gpustat_data2 AS $gpu) {
                 $gpudesc = sprintf('%s: %s - %s', $gpu['id'], $gpu['model'], $gpu['guid']);
-                printf(mk_option($gpustat_cfg['GPU2'], sprintf('%s|||||%s', $gpu['model'], $gpu['guid']), $gpudesc));
+                printf(mk_option($gpustat_cfg['GPU2'], sprintf('%s|||||%s|||||%s', $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
             }
         }
     ?>
@@ -89,7 +89,7 @@ GPU3:   <select id="GPU3" name="GPU3" size="1" length="50">
             printf(mk_option($gpustat_cfg['GPU3'], "", "None"));
             foreach ($gpustat_data3 AS $gpu) {
                 $gpudesc = sprintf('%s: %s - %s', $gpu['id'], $gpu['model'], $gpu['guid']);
-                printf(mk_option($gpustat_cfg['GPU3'], sprintf('%s|||||%s', $gpu['model'], $gpu['guid']), $gpudesc));
+                printf(mk_option($gpustat_cfg['GPU3'], sprintf('%s|||||%s|||||%s', $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
             }
         }
     ?>
@@ -106,7 +106,7 @@ UI Automatic Refresh / Interval (Milliseconds):
     <?=mk_option($gpustat_cfg['UIREFRESH'], "0", "No");?>
     <?=mk_option($gpustat_cfg['UIREFRESH'], "1", "Yes");?>
   </select>
-  <input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="1000">
+  <input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="5000">
 
 <h2><b>Enabled Pollers</b></h2>
 
