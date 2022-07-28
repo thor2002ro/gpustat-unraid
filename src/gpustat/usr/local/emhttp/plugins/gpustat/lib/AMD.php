@@ -159,36 +159,26 @@ class AMD extends Main
                     }
                     if ($this->settings['DISPFAN']) {
                         if (isset($data['fan1']['fan1_input'])) {
-                            $sensors['fan_raw'] = $this->roundFloat($data['fan1']['fan1_input']);
+                            $sensors['fan'] = $this->roundFloat($data['fan1']['fan1_input']);
                             if (isset($data['fan1']['fan1_max'])) {
-                                $sensors['fanmax_raw'] = $this->roundFloat($data['fan1']['fan1_max']);
+                                $sensors['fanmax'] = $this->roundFloat($data['fan1']['fan1_max']);
                             }
                             $sensors['fanunit'] = 'rpm';
-                            if (isset($sensors['fan_raw']) && isset($sensors['fanmax_raw'])) {
-                                $sensors['fan'] = ($this->roundFloat($sensors['fan_raw'] / $sensors['fanmax_raw'] * 100)) . "%";
-                            } else {
-                                $sensors['fan'] = NULL;
-                            }
                         }
                     }
                     if ($this->settings['DISPPWRDRAW']) {
                         if (isset($data['power1']['power1_average'])) {
-                            $sensors['power_raw'] = $this->roundFloat($data['power1']['power1_average'], 1);
+                            $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
                             if (isset($data['power1']['power1_cap'])) {
-                                $sensors['powermax_raw'] = $this->roundFloat($data['power1']['power1_cap'], 1);
+                                $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
                             }
                         } else if (isset($data['PPT']['power1_average'])) {
-                            $sensors['power_raw'] = $this->roundFloat($data['PPT']['power1_average'], 1);
+                            $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
                             if (isset($data['PPT']['power1_cap'])) {
-                                $sensors['powermax_raw'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
+                                $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
                             }
                         }
                         $sensors['powerunit'] = 'w';
-                        if (isset($sensors['power_raw']) && isset($sensors['powermax_raw'])) {
-                            $sensors['power'] = ($this->roundFloat($sensors['power_raw'] / $sensors['powermax_raw'] * 100)) . "%";
-                        } else {
-                            $sensors['power'] = NULL;
-                        }
 
                         if (isset($data['vddgfx']['in0_input'])) {
                             $sensors['voltageunit'] = 'v';

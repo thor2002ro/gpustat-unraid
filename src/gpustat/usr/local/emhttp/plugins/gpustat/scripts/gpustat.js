@@ -38,17 +38,18 @@ const gpustat_status_gpu3 = () => {
 const gpustat_status = function(_args) {
     $.getJSON("/plugins/gpustat/gpustatus.php?argv="+_args, (data) => {
         if (data) {
+     
 
             switch (data["vendor"]) {
                 case 'NVIDIA':
                     // Nvidia Slider Bars
-                    $('.gpu'+_args+'-memclockbar').removeAttr('style').css('width', data["memclock"] / data["memclockmax"] * 100 + "%");
+                    /*$('.gpu'+_args+'-memclockbar').removeAttr('style').css('width', data["memclock"] / data["memclockmax"] * 100 + "%");
                     $('.gpu'+_args+'-gpuclockbar').removeAttr('style').css('width', data["clock"] / data["clockmax"] * 100 + "%");
                     $('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"].replace("W","") / data["powermax"] * 100) + "%");
                     $('.gpu'+_args+'-rxutilbar').removeAttr('style').css('width', parseInt(data["rxutil"] / data["pciemax"] * 100) + "%");
                     $('.gpu'+_args+'-txutilbar').removeAttr('style').css('width', parseInt(data["txutil"] / data["pciemax"] * 100) + "%");
 
-                    /* let nvidiabars = ['util', 'memutil', 'encutil', 'decutil', 'fan'];
+                     let nvidiabars = ['util', 'memutil', 'encutil', 'decutil', 'fan'];
                     nvidiabars.forEach(function (metric) {
                         $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                     }); */
@@ -73,9 +74,9 @@ const gpustat_status = function(_args) {
                     }); */
                     break;
                 case 'AMD':
-                    //$('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"] / data["powermax"] * 100) + "%");
-                    //$('.gpu'+_args+'-fanbar').removeAttr('style').css('width', parseInt(data["fan"] / data["fanmax"] * 100) + "%");
-                /*     let amdbars = [
+                /*  $('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"] / data["powermax"] * 100) + "%");
+                    $('.gpu'+_args+'-fanbar').removeAttr('style').css('width', parseInt(data["fan"] / data["fanmax"] * 100) + "%");
+                     let amdbars = [
                         'util', 'event', 'vertex',
                         'texture', 'shaderexp', 'sequencer',
                         'shaderinter', 'scancon', 'primassem',
@@ -88,18 +89,26 @@ const gpustat_status = function(_args) {
                     break;
             }
 
-            $.each(data, function (key, value) {
-                $('.gpu'+_args+'-'+key+'bar').removeAttr('style').css('width', value);
-            
-                if (!$('.gpu'+_args+'-'+key).parent().hasClass('gpu-stats-primary') && $(data[key+'_raw']).length > 0 && $(data[key+'max'+'_raw']).length > 0) {
-                    $('.gpu'+_args+'-'+key).parent().attr('title', (value+' - '+data[key+'_raw']+' / '+data[key+'max'+'_raw']+' '+data[key+'unit']));
-                    $('.gpu'+_args+'-'+key).html(data[key+'_raw']);
-                } else if (!$('.gpu'+_args+'-'+key).parent().hasClass('gpu-stats-primary')) {
-                    $('.gpu'+_args+'-'+key).parent().attr('title', (value));
-                    $('.gpu'+_args+'-'+key).html(value);
+            $.each(data, function (key, value) {           
+                var dataV = parseInt(data[key]);
+                // nvidia crap
+                if ((key === 'rxutil') || (key === 'txutil')) {
+                    var dataVmax = parseInt(data["pciemax"]) || null;
                 } else {
-                    $('.gpu'+_args+'-'+key).html(value);
+                    var dataVmax = parseInt(data[key+'max']) || null;
+                }                
+                var unitV = data[key+'unit'] || null;
+                if (!$('.gpu'+_args+'-'+key).parent().hasClass('gpu-stats-primary') && $(dataV).length > 0 && $(dataVmax).length > 0) {
+                    var _value = parseInt(dataV / dataVmax * 100) + "%";
+                    $('.gpu'+_args+'-'+key+'bar').removeAttr('style').css('width', _value);
+                    $('.gpu'+_args+'-'+key).parent().attr('title', (_value+' - '+dataV+' / '+dataVmax+' '+unitV));
+                } else if (!$('.gpu'+_args+'-'+key).parent().hasClass('gpu-stats-primary')) {
+                    $('.gpu'+_args+'-'+key+'bar').removeAttr('style').css('width', value);
+                    $('.gpu'+_args+'-'+key).parent().attr('title', (value));
+                } else {
+                    $('.gpu'+_args+'-'+key+'bar').removeAttr('style').css('width', value);
                 }
+                $('.gpu'+_args+'-'+key).html(value);
             })
             
             change_visibility('#gpu'+_args+'-'+'pciegen-arrow', data["pcie_downspeed"]);
@@ -109,6 +118,7 @@ const gpustat_status = function(_args) {
             change_color('#gpu'+_args+'-'+'pcie', data["bridge_bus"], 0, 'brown');
             change_tooltip($('#gpu'+_args+'-'+'pcie').parent(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:'+data["bridge_bus"]+')');
             change_color_string('.gpu'+_args+'-'+'passedthrough', data["passedthrough"], "Passthrough");
+           
         }
     });
 };
