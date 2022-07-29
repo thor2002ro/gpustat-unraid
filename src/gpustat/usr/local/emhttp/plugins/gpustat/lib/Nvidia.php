@@ -238,7 +238,7 @@ class Nvidia extends Main
     {
         if ($this->cmdexists) {
             //Command invokes nvidia-smi in query all mode with XML return
-            $this->stdout = shell_exec(self::CMD_UTILITY . ES . sprintf(self::STATISTICS_PARAM, $this->praseGPU($gpu)[1]));
+            $this->stdout = shell_exec(self::CMD_UTILITY . ES . sprintf(self::STATISTICS_PARAM, $this->praseGPU($gpu)[2]));
             if (!empty($this->stdout) && strlen($this->stdout) > 0) {
                 $this->parseStatistics($gpu);
             } else {
@@ -290,8 +290,8 @@ class Nvidia extends Main
 
             $data = $data->gpu;
             $this->pageData += [
-                'vendor'        => 'NVIDIA',
-                'name'          => $this->praseGPU($gpu)[0],
+                'vendor'        => $this->praseGPU($gpu)[0],
+                'name'          => $this->praseGPU($gpu)[1],
                 'clockmax'      => 'N/A',
                 'memclockmax'   => 'N/A',
                 'memtotal'      => 'N/A',
@@ -315,13 +315,16 @@ class Nvidia extends Main
                 $this->pageData[$app . "mem"] = 0;
                 $this->pageData[$app . "count"] = 0;
             }
+            
+            $this->pageData['vendor'] = 'NVIDIA';
+
             if (isset($data->product_name)) {
                 $this->getProductName($data->product_name);
             }
             if (isset($data->uuid)) {
                 $this->pageData['uuid'] = (string) $data->uuid;
             } else {
-                $this->pageData['uuid'] = $this->praseGPU($gpu)[1];
+                $this->pageData['uuid'] = $this->praseGPU($gpu)[2];
             }
             $this->getUtilization($data);
             $this->getSensorData($data);

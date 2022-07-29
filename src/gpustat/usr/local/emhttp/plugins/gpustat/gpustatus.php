@@ -76,7 +76,8 @@ if (isset($gpustat_inventory) && $gpustat_inventory) {
         echo "not found GPU{$GPUNR}";
     }
 
-    switch ($gpustat_cfg["VENDOR{$GPUNR}"]) {
+    $gpu_vendor = strtolower(Main::praseGPU($gpustat_cfg["GPU{$GPUNR}"])[0]);
+    switch ($gpu_vendor) {
         case 'amd':
             (new AMD($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
             break;

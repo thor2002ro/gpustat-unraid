@@ -36,7 +36,7 @@ class AMD extends Main
     const LSPCI = 'lspci';
     const INVENTORY_PARAM = '| grep VGA';
     const INVENTORY_REGEX =
-    '/^(?P<busid>[0-9a-f]{2}).*\[AMD(\/ATI)?\]\s+(?P<model>.+)\s+(\[(?P<product>.+)\]|\()/imU';
+    '/^(?P<busid>[0-9a-f]{2}).*\[AMD(\/ATI)?\]\s+(?P<model>.+)\s+(?:\[(?P<product>.+)\]|\()/imU';
 
     const STATISTICS_PARAM = '-d - -l 1';
     const STATISTICS_KEYMAP = [
@@ -94,10 +94,11 @@ class AMD extends Main
                 if (!empty($this->inventory)) {
                     foreach ($this->inventory as $gpu) {
                         $result[] = [
-                            'id'    => "Bus ID " . $gpu['busid'],
-                            'model' => (string) ($gpu['product'] ?? $gpu['model']),
-                            'guid'  => $gpu['busid'],
-                            'bridge_chip' => ($this->getpciebridge($gpu['busid']))['bridge_chip'],
+                            'vendor'        => 'AMD',
+                            'id'            => "Bus ID " . $gpu['busid'],
+                            'model'         => (string) ($gpu['product'] ?? $gpu['model']),
+                            'guid'          => $gpu['busid'],
+                            'bridge_chip'   => ($this->getpciebridge($gpu['busid']))['bridge_chip'],
                         ];
                     }
                 }
@@ -117,7 +118,7 @@ class AMD extends Main
     {
         if ($this->cmdexists) {
             //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
-            $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->praseGPU($gpu)[1]);
+            $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->praseGPU($gpu)[2]);
             $this->runCommand($command, self::STATISTICS_PARAM, false);
             if (!empty($this->stdout) && strlen($this->stdout) > 0) {
                 $this->parseStatistics($gpu);
@@ -201,8 +202,8 @@ class AMD extends Main
     {
         $result = [];
         $bridge = [];
-        $gpubus = $this->praseGPU($gpu)[1];
-        $bridgebus = $this->praseGPU($gpu)[2];//$this->getpciebridge($this->praseGPU($gpu)[1])['bridge_chip'];
+        $gpubus = $this->praseGPU($gpu)[2];
+        $bridgebus = $this->praseGPU($gpu)[3];//$this->getpciebridge($this->praseGPU($gpu)[3])['bridge_chip'];
         if ($this->cmdexists) {
             $this->checkCommand(self::LSPCI, false);
             if ($this->cmdexists) {
@@ -282,8 +283,8 @@ class AMD extends Main
     private function parseStatistics(string $gpu)
     {
         $this->pageData += [
-            'vendor'        => 'AMD',
-            'name'          => $this->praseGPU($gpu)[0],
+            'vendor'        => $this->praseGPU($gpu)[0],
+            'name'          => $this->praseGPU($gpu)[1],
             'event'         => 'N/A',
             'vertex'        => 'N/A',
             'texture'       => 'N/A',
@@ -331,7 +332,7 @@ class AMD extends Main
         } else {
             $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_ENOUGH, "Count: $count");
         }
-        $this->pageData = array_merge($this->pageData, $this->getSensorData($this->praseGPU($gpu)[1]));
+        $this->pageData = array_merge($this->pageData, $this->getSensorData($this->praseGPU($gpu)[2]));
 
         $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));
 

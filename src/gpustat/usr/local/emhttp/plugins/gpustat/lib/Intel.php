@@ -71,9 +71,10 @@ class Intel extends Main
                 if (!empty($this->inventory)) {
                     // Only one iGPU per system, so mark it ID 99 and pad other results
                     $inventory = [
-                        'id' => 99,
-                        'model' => $this->inventory[0]['model'],
-                        'guid' => '0000-00-000-000000',
+                        'vendor'        => 'Intel',
+                        'id'            => 99,
+                        'model'         => $this->inventory[0]['model'],
+                        'guid'          => '0000-00-000-000000',
                     ];
                     $result = $inventory;
                 }
@@ -128,8 +129,8 @@ class Intel extends Main
         if (!empty($data)) {
 
             $this->pageData += [
-                'vendor'        => 'Intel',
-                'name'          => $this->praseGPU($gpu)[0],
+                'vendor'        => $this->praseGPU($gpu)[0],
+                'name'          => $this->praseGPU($gpu)[1],
                 '3drender'      => 'N/A',
                 'blitter'       => 'N/A',
                 'interrupts'    => 'N/A',

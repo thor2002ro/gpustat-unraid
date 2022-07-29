@@ -25,6 +25,8 @@ Icon="gpustat.png"
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
     */
+    require_once('plugins/gpustat/lib/Main.php');
+    use gpustat\lib\Main;
 
     $gpustat_cfg = parse_plugin_cfg('gpustat', true);
 
@@ -35,7 +37,9 @@ Icon="gpustat.png"
         'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
     ];
 
-    switch ($gpustat_cfg['VENDOR3']) {
+    $gpu_vendor = strtolower(Main::praseGPU($gpustat_cfg["GPU3"])[0]);
+
+    switch ($gpu_vendor) {
         case "nvidia":
             $gpu_nv = true;
             break;
@@ -48,7 +52,7 @@ Icon="gpustat.png"
         default:
             // If vendor isn't set the config hasn't been saved, don't render the plugin
             $gpu_unknown = true;
-            $unknown_msg = "Default vendor set - Change vendor in GPUStat settings page and apply.";
+            $unknown_msg = "Default GPU set - Change GPU in GPUStat settings page and apply.";
     }
 
     //$gpu_nv = true;
@@ -124,7 +128,7 @@ Icon="gpustat.png"
 <?php if($gpustat_cfg['DISPFAN'] || $gpustat_cfg['DISPPWRDRAW']) : ?>
         <tr class="dash_gpustat_toggle3 gpu3-enviro">
             <td></td>
-            <td>Fan (RPM) - Power (W)</td>
+            <td>Fan (RPM) - TDP (W)</td>
 <?php if($gpustat_cfg['DISPFAN']) : ?>
             <td><span class='gpu3-fan load'></span><div class='usage-disk sys'><span class='gpu3-fanbar'></span><span></span></div></td>
 <?php endif; ?>

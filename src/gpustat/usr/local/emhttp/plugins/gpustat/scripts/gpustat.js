@@ -38,8 +38,6 @@ const gpustat_status_gpu3 = () => {
 const gpustat_status = function(_args) {
     $.getJSON("/plugins/gpustat/gpustatus.php?argv="+_args, (data) => {
         if (data) {
-     
-
             switch (data["vendor"]) {
                 case 'NVIDIA':
                     // Nvidia Slider Bars
