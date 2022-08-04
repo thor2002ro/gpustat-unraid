@@ -51,8 +51,8 @@ class AMD extends Main
         'pa'    => ['primassem'],
         'db'    => ['depthblk'],
         'cb'    => ['colorblk'],
-        'vram'  => ['memutil', 'memused'],
-        'gtt'   => ['gfxtrans', 'transused'],
+        'vram'  => ['memusedutil', 'memused'],
+        'gtt'   => ['gttusedutil', 'gttused'],
         'mclk'  => ['memclockutil', 'memclock', 'clocks'],
         'sclk'  => ['clockutil', 'clock', 'clocks'],
     ];
@@ -151,8 +151,7 @@ class AMD extends Main
                     $data = $data[$chip];
                     if ($this->settings['DISPTEMP']) {
                         if (isset($data['edge']['temp1_input'])) {
-                            $sensors['tempunit'] = $this->settings['TEMPFORMAT'];
-                            $sensors['temp'] = $this->roundFloat($data['edge']['temp1_input']) . ' °' . $sensors['tempunit'];
+                            $sensors['temp'] = $this->roundFloat($data['edge']['temp1_input']) . ' °' . $this->settings['TEMPFORMAT'];
                             if (isset($data['edge']['temp1_crit'])) {
                                 $sensors['tempmax'] = $this->roundFloat($data['edge']['temp1_crit']);
                             }
@@ -164,7 +163,6 @@ class AMD extends Main
                             if (isset($data['fan1']['fan1_max'])) {
                                 $sensors['fanmax'] = $this->roundFloat($data['fan1']['fan1_max']);
                             }
-                            $sensors['fanunit'] = 'rpm';
                         }
                     }
                     if ($this->settings['DISPPWRDRAW']) {
@@ -179,10 +177,7 @@ class AMD extends Main
                                 $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
                             }
                         }
-                        $sensors['powerunit'] = 'w';
-
                         if (isset($data['vddgfx']['in0_input'])) {
-                            $sensors['voltageunit'] = 'v';
                             $sensors['voltage'] = $this->roundFloat($data['vddgfx']['in0_input'], 2);
                         }
                     }
@@ -297,7 +292,14 @@ class AMD extends Main
             'colorblk'      => 'N/A',
             'perfstate'     => 'N/A',
             'throttled'     => 'N/A',
-            'thrtlrsn'      => '',
+            'thrtlrsn'      => 'N/A',
+        ];
+
+        $this->pageData += [
+            'powerunit'     => 'w',
+            'fanunit'       => 'rpm',
+            'voltageunit'   => 'v',
+            'tempunit'      => $this->settings['TEMPFORMAT'],
         ];
 
         // radeontop data doesn't follow a standard object format -- need to parse CSV and then explode by spaces
@@ -309,22 +311,32 @@ class AMD extends Main
                 $fields = explode(" ", $metric);
                 if (isset(self::STATISTICS_KEYMAP[$fields[0]])) {
                     $values = self::STATISTICS_KEYMAP[$fields[0]];
+                    //echo $fields[0] . " " . $values[0] . ": " . $fields[1] . " " . $values[1] . ": " . $fields[2] . " " . $values[2] . ": " . $fields[3] . "\n";
+
                     if ($this->settings['DISP' . strtoupper($values[0])] || $this->settings['DISP' . strtoupper($values[2])]) {
-                        $this->pageData[$values[0]] = $this->roundFloat($this->stripText('%', $fields[1]), 1) . '%';
-                        if (isset($fields[2])) {
-                            $this->pageData[$values[1]] = $this->roundFloat(
-                                trim(
-                                    $this->stripText(
-                                        ['mb', 'ghz'],
-                                        $fields[2]
-                                    )
-                                ),
-                                2
-                            );
+                        $fields[1] = str_replace(PHP_EOL, '', $fields[1]);
+                        $fields1_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i',$fields[1]);                                                               
+                        $this->pageData[$values[0]] = $fields1_clean[0];
+                        if (isset($fields1_clean[1])) {
+                            $this->pageData[$values[0] . 'unit'] = $fields1_clean[1];
                         }
+                        if (isset($fields[2])) {
+                            $fields[2] = str_replace(PHP_EOL, '', $fields[2]);
+                            $fields2_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i',$fields[2]);                                                               
+                            $this->pageData[$values[1]] = $fields2_clean[0];
+                            if (isset($fields2_clean[1])) {
+                                $this->pageData[$values[1] . 'unit'] = $fields2_clean[1];
+                            }
+                        }
+
+                        if (($fields[0] == 'vram') || ($fields[0] == 'gtt') || 
+                            ($fields[0] == 'mclk') || ($fields[0] == 'sclk')) { 
+                            $this->pageData[$values[1] . 'max'] = $this->roundFloat(floatval((($fields2_clean[0])*100/($fields1_clean[0]))), 2);
+                        }
+                  
                     } elseif ($fields[0] == 'gpu') {
                         // GPU Load doesn't have a setting, for now just pass the check
-                        $this->pageData[$values[0]] = $this->roundFloat($this->stripText('%', $fields[1]), 1) . '%';
+                        $this->pageData[$values[0]] = $this->roundFloat(floatval($fields[1]), 1) . '%';
                     }
                 }
             }
@@ -332,6 +344,7 @@ class AMD extends Main
         } else {
             $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_ENOUGH, "Count: $count");
         }
+
         $this->pageData = array_merge($this->pageData, $this->getSensorData($this->praseGPU($gpu)[2]));
 
         $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));

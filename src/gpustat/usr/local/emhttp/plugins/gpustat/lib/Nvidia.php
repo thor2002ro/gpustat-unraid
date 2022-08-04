@@ -269,11 +269,11 @@ class Nvidia extends Main
                 }
             }
         }
-        if ($this->settings['DISPMEMUTIL']) {
+        if ($this->settings['DISPMEMUSEDUTIL']) {
             if (isset($data->fb_memory_usage->used, $data->fb_memory_usage->total)) {
                 $this->pageData['memtotal'] = (string) $this->stripText(' MiB', $data->fb_memory_usage->total);
                 $this->pageData['memused'] = (string) $this->stripText(' MiB', $data->fb_memory_usage->used);
-                $this->pageData['memutil'] = round($this->pageData['memused'] / $this->pageData['memtotal'] * 100) . "%";
+                $this->pageData['memusedutil'] = round($this->pageData['memused'] / $this->pageData['memtotal'] * 100) . "%";
             }
         }
     }

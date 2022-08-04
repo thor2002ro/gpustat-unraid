@@ -88,7 +88,7 @@ UI Automatic Refresh / Interval (Milliseconds):
     <?=mk_option($gpustat_cfg['UIREFRESH'], "0", "No");?>
     <?=mk_option($gpustat_cfg['UIREFRESH'], "1", "Yes");?>
   </select>
-  <input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="5000">
+  <input type="text" title="5000+ recommanded" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="5000">
 
 <h2><b>Enabled Pollers</b></h2>
 
@@ -119,9 +119,9 @@ Power State (Nvidia/Intel):
   </select>
 
 Memory Utilization (Nvidia/AMD):
-: <select id="DISPMEMUTIL" name="DISPMEMUTIL" size="1">
-    <?=mk_option($gpustat_cfg['DISPMEMUTIL'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPMEMUTIL'], "1", "Yes");?>
+: <select id="DISPMEMUSEDUTIL" name="DISPMEMUSEDUTIL" size="1">
+    <?=mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "1", "Yes");?>
   </select>
 
 Temperature (Nvidia/AMD):
@@ -251,9 +251,9 @@ Color Block Usage:
   </select>
 
 Graphics Translation Usage:
-: <select id="DISPGFXTRANS" name="DISPGFXTRANS" size="1">
-    <?=mk_option($gpustat_cfg['DISPGFXTRANS'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPGFXTRANS'], "1", "Yes");?>
+: <select id="DISPGTTUSEDUTIL" name="DISPGTTUSEDUTIL" size="1">
+    <?=mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "1", "Yes");?>
   </select>
 
 <br><br><br>
