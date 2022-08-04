@@ -3,7 +3,7 @@
 <!ENTITY name      "gpustat">
 <!ENTITY author    "b3rs3rk">
 <!ENTITY mod       "thor2002ro">
-<!ENTITY version   "2022.07.29-thor2002ro">
+<!ENTITY version   "2022.08.04-thor2002ro">
 <!ENTITY launch    "Settings/GPUStatSettings">
 <!ENTITY gitURL    "https://raw.githubusercontent.com/thor2002ro/&name;-unraid/master">
 <!ENTITY pluginURL "&gitURL;/&name;.plg">
