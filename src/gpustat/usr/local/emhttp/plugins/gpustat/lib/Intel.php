@@ -70,7 +70,7 @@ class Intel extends Main
                 }
                 if (!empty($this->inventory)) {
                     // Only one iGPU per system, so mark it ID 99 and pad other results
-                    $inventory = [
+                    $inventory[] = [
                         'vendor'        => 'Intel',
                         'id'            => 99,
                         'model'         => $this->inventory[0]['model'],

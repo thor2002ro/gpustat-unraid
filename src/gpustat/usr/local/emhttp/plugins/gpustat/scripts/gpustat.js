@@ -154,12 +154,17 @@ const gpustat_dash = function (_args) {
 
 var keyMap = {
     //common
-    "clock": "Clock",
-    "fan": "Fan Speed",
-    "memclock": "Mem Clock",
+    "clock": "Clock",                  // gpu clock
+    "fan": "Fan Speed",                // current fan speed
+    "fanmax": "Fan Speed Max",         // max fan speed
+    "memclock": "Mem Clock",           // memory clock
     "memused": "Mem Usage",            // used vram
-    "power": "TDP",
-    "voltage": "Voltage",
+    "power": "TDP",                    // current tdp/power
+    "voltage": "Voltage",              // current gpu voltage
+    'pciegen':" ",                     // current pcie gen
+    'pciegenmax':" ",                  // max pcie gen
+    'pciewidth':" ",                   // current pcie width
+    'pciewidthmax':" ",                // max pcie width
     //amd
     "event": "Event",                  // Event Engine
     "vertex": "Vertex",                // Vertex Grouper + Tesselator
@@ -167,14 +172,27 @@ var keyMap = {
     "shaderexp": "Shader Exp",         // Shader Export
     "sequencer": "Sequencer",          // Sequencer Instruction Cache
     "shaderinter": "Shader Inter",     // Shader Interpolator
-    "scancon": "Scancon",              // Scan Converter
+    "scancon": "Scan Conv",            // Scan Converter
     "primassem": "Prim Assem",         // Primitive Assembl
     "depthblk": "Depth Blk",           // Depth Block
     "colorblk": "Color Blk",           // Color Block
     "gttused": "GTT Mem",              // used GTT
     //nvidia
-
+    'encutil':"Encoder Util",
+    'decutil':"Decoder Util",
+    'perfstate':"Power State",
+    'throttled':"Throttling",
+    'thrtlrsn':" ",                    // reason for throttling
+    'sessions':" ",                    // GPU Sessions
     //intel
+    '3drender': "3D Render Load",
+    'blitter': "Blitter Load",
+    'interrupts': "Interrupts/Sec",
+    'powerutil': "Power Draw",
+    'video': "Video Load",
+    'videnh': "Video Enhance Load",
+    "rxutil": "Bus Rx Util",           // used by nvidia also
+    "txutil": "Bus TX Util",           // used by nvidia also
 };
 
 var keyOrder = [
@@ -210,7 +228,7 @@ const gpustat_dash_build = function (_args) {
             console.log(disabled_array);
             console.log(missing_array); */
             for (var i = 0; i < gpu_data.length; i += 2) {
-                var $clone = $('#message-template').html();
+                var $clone = $('#message-template-bars').html();
                 $clone = $clone.replaceAll("{{gpuNR}}", _args)
                     .replaceAll("{{label1}}", keyMap[gpu_data[i]] || gpu_data[i])
                     .replaceAll("{{label2}}", keyMap[gpu_data[i + 1]] || gpu_data[i + 1])

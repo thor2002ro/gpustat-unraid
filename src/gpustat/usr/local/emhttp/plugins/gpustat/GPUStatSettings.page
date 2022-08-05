@@ -41,9 +41,9 @@ Title="GPU Statistics"
 GPU1:
 : <select id="GPU1" name="GPU1" size="1" >
     <?php
-        if (isset($gpustat_data1)) {
+        if (isset($gpustat_data)) {
             printf(mk_option($gpustat_cfg['GPU1'], "", "None"));
-            foreach ($gpustat_data1 AS $gpu) {
+            foreach ($gpustat_data AS $gpu) {
                 $gpudesc = sprintf('%s: %s - %s - %s', $gpu['id'], $gpu['vendor'], $gpu['model'], $gpu['guid']);
                 printf(mk_option($gpustat_cfg['GPU1'], sprintf('%s|||||%s|||||%s|||||%s', $gpu['vendor'], $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
             }
@@ -54,9 +54,9 @@ GPU1:
 GPU2:
 : <select id="GPU2" name="GPU2" size="1">
     <?php
-        if (isset($gpustat_data2)) {
+        if (isset($gpustat_data)) {
             printf(mk_option($gpustat_cfg['GPU2'], "", "None"));
-            foreach ($gpustat_data2 AS $gpu) {
+            foreach ($gpustat_data AS $gpu) {
                 $gpudesc = sprintf('%s: %s - %s - %s', $gpu['id'], $gpu['vendor'], $gpu['model'], $gpu['guid']);
                 printf(mk_option($gpustat_cfg['GPU2'], sprintf('%s|||||%s|||||%s|||||%s', $gpu['vendor'], $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
             }
@@ -67,9 +67,9 @@ GPU2:
 GPU3:
 : <select id="GPU3" name="GPU3" size="1">
     <?php
-        if (isset($gpustat_data3)) {
+        if (isset($gpustat_data)) {
             printf(mk_option($gpustat_cfg['GPU3'], "", "None"));
-            foreach ($gpustat_data3 AS $gpu) {
+            foreach ($gpustat_data AS $gpu) {
                 $gpudesc = sprintf('%s: %s - %s - %s', $gpu['id'], $gpu['vendor'], $gpu['model'], $gpu['guid']);
                 printf(mk_option($gpustat_cfg['GPU3'], sprintf('%s|||||%s|||||%s|||||%s', $gpu['vendor'], $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
             }

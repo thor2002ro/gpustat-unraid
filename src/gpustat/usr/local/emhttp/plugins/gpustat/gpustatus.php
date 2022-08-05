@@ -46,17 +46,12 @@ if (!isset($gpustat_cfg)) {
 if (isset($gpustat_inventory) && $gpustat_inventory) {
     $gpustat_cfg['inventory'] = true;
     // Settings page looks for $gpustat_data specifically -- inventory all supported GPU types
-    $gpustat_data1 = (new Nvidia($gpustat_cfg))->getInventory();
-    $gpustat_data1 += (new Intel($gpustat_cfg))->getInventory();
-    $gpustat_data1 += (new AMD($gpustat_cfg))->getInventory();
+    $inventory_nvidia = (new Nvidia($gpustat_cfg))->getInventory();
+    $inventory_intel = (new Intel($gpustat_cfg))->getInventory();
+    $inventory_amd = (new AMD($gpustat_cfg))->getInventory();
 
-    $gpustat_data2 = (new Nvidia($gpustat_cfg))->getInventory();
-    $gpustat_data2 += (new Intel($gpustat_cfg))->getInventory();
-    $gpustat_data2 += (new AMD($gpustat_cfg))->getInventory();
-
-    $gpustat_data3 = (new Nvidia($gpustat_cfg))->getInventory();
-    $gpustat_data3 += (new Intel($gpustat_cfg))->getInventory();
-    $gpustat_data3 += (new AMD($gpustat_cfg))->getInventory();
+    $gpustat_data = array_merge($inventory_nvidia, $inventory_intel, $inventory_amd);
+    
 } else {
     if (PHP_SAPI === 'cli') {
         $argument1 = $argv[1];

@@ -100,12 +100,20 @@ Icon="gpustat.png"
     </tbody>
 </table>
 
-<script id="message-template" type ="text/template">
+<script id="message-template-bars" type ="text/template">
     <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
             <td><span>{{label1}}</span><span class='hidden'> / {{label2}}</span></td>
             <td><span class='gpu{{gpuNR}}-{{stat1}} load'></span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat1}}bar'></span><span></span></div></td>
             <td class='hidden'><span class='gpu{{gpuNR}}-{{stat2}} load'></span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat2}}bar'></span><span></span></div></td>
+            <td></td>
+    </tr>
+</script>
+
+<script id="message-template-simple" type ="text/template">
+    <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
+            <td></td>
+            <td colspan="2">{{label1}}: <span class='gpu{{gpuNR}}-{{stat1}}'></span> &emsp; {{label2}}: <span class='gpu{{gpuNR}}-{{stat2}}'></span> &emsp; {{label3}}: <span class='gpu{{gpuNR}}-{{stat3}}'></span></td>
             <td></td>
     </tr>
 </script>
