@@ -196,14 +196,24 @@ var keyMap = {
 };
 
 var keyOrder = [
+    //common
     "clock", "memclock",
     "fan", "power",
+    //amd
     "gttused", "memused",
     "event", "vertex",
     "texture", "sequencer",
     "shaderexp", "shaderinter",
     "scancon", "primassem",
     "depthblk", "colorblk",
+    //intel
+    "3drender", "blitter",
+    "video", "videnh",
+    "interrupts",
+    //nvidia
+    "rxutil", "txutil",
+    "perfstate", "throttled",
+    "thrtlrsn", "sessions",
 ];
 
 const gpustat_dash_build = function (_args) {
