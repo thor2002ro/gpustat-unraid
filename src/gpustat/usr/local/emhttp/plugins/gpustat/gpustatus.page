@@ -113,7 +113,9 @@ Icon="gpustat.png"
 <script id="message-template-simple" type ="text/template">
     <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
-            <td colspan="2">{{label1}}: <span class='gpu{{gpuNR}}-{{stat1}}'></span> &emsp; {{label2}}: <span class='gpu{{gpuNR}}-{{stat2}}'></span> &emsp; {{label3}}: <span class='gpu{{gpuNR}}-{{stat3}}'></span></td>
+            <td><span>{{label1}}: </span><span class='gpu{{gpuNR}}-{{stat1}}'></span></td>
+            <td><span class='hidden'>{{label2}}: <span class='gpu{{gpuNR}}-{{stat2}}'></span></span></td>
+            <td><span class='hidden'>{{label3}}: <span class='gpu{{gpuNR}}-{{stat3}}'></span></span></td>
             <td></td>
     </tr>
 </script>

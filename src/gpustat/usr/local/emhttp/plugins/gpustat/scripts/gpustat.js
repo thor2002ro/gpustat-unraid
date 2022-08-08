@@ -208,6 +208,11 @@ var keyOrder = [
 
 const gpustat_dash_build = function (_args) {
     let gpu_data = [];
+    let gpu_data_nobars = [];
+    let gpu_data_bars = [];
+    let disabled_array = [];
+    let missing_array = [];
+    
     $.getJSON("/plugins/gpustat/gpustatus.php?argv=" + _args, (data) => {
         if (data) {
             $.each(data, function (key, value) {
@@ -216,17 +221,28 @@ const gpustat_dash_build = function (_args) {
                     (key.includes('passedthrough')) || (key.includes('vendor')) ||
                     (key.includes('name')) || (key.includes('temp')) ||
                     (key.includes('util')) || (value.toString().includes('N/A')))) {
-                    gpu_data.push(key);
+                        gpu_data.push(key);
+                        if (!(($(data[key + 'max']).length > 0) || (value.toString().includes('%')))) {
+                            gpu_data_nobars.push(key);
+                        }
                 }
             })
 
-            var disabled_array = keyOrder.filter(function (obj) { return gpu_data.indexOf(obj) == -1; });
-            var missing_array = gpu_data.filter(function (obj) { return keyOrder.indexOf(obj) == -1; });
-
+            // returns missing keys present in keyOrder but not in gpu_data
+            disabled_array = keyOrder.filter(function (obj) { return gpu_data.indexOf(obj) == -1; });
+            // returns missing keys preset in gpu_data but not in keyOrder
+            missing_array = gpu_data.filter(function (obj) { return keyOrder.indexOf(obj) == -1; });
+            // merge keyOrded and missing_array and remove keys from disabled_array
             gpu_data = keyOrder.concat(missing_array).filter(function (obj) { return disabled_array.indexOf(obj) < 0; });
-            /* console.log(gpu_data);
+            gpu_data = gpu_data.filter(function (obj) { return gpu_data_nobars.indexOf(obj) < 0; });
+
+
+/*             console.log(gpu_data);
             console.log(disabled_array);
-            console.log(missing_array); */
+            console.log(missing_array);
+            console.log(gpu_data_nobars);
+            console.log(gpu_data_bars); */
+
             for (var i = 0; i < gpu_data.length; i += 2) {
                 var $clone = $('#message-template-bars').html();
                 $clone = $clone.replaceAll("{{gpuNR}}", _args)
@@ -237,7 +253,26 @@ const gpustat_dash_build = function (_args) {
 
                 if (gpu_data[i + 1]) {
                     $clone = $clone.replaceAll("'hidden'", '');
+                }                
+                // etc
+                $("#target-dash-gpustat" + _args).append($clone);
+            }
+            for (var i = 0; i < gpu_data_nobars.length; i += 3) {
+                var $clone = $('#message-template-simple').html();
+                $clone = $clone.replaceAll("{{gpuNR}}", _args)
+                    .replaceAll("{{label1}}", keyMap[gpu_data_nobars[i]] || gpu_data_nobars[i])
+                    .replaceAll("{{label2}}", keyMap[gpu_data_nobars[i + 1]] || gpu_data_nobars[i + 1])
+                    .replaceAll("{{label3}}", keyMap[gpu_data_nobars[i + 2]] || gpu_data_nobars[i + 2])
+                    .replaceAll("{{stat1}}", gpu_data_nobars[i])
+                    .replaceAll("{{stat2}}", gpu_data_nobars[i + 1])
+                    .replaceAll("{{stat3}}", gpu_data_nobars[i + 2]);
+
+                if (gpu_data_nobars[i + 1]) {
+                    $clone = $clone.replace("'hidden'", '');
                 }
+                if (gpu_data_nobars[i + 2]) {
+                    $clone = $clone.replace("'hidden'", '');
+                }        
                 // etc
                 $("#target-dash-gpustat" + _args).append($clone);
             }
