@@ -253,7 +253,7 @@ class AMD extends Main
         if ($this->cmdexists) {
             $this->checkCommand(self::LSPCI, false);
             if ($this->cmdexists) {
-                $param = sprintf(' -vvmmt | grep -m 1 -E "\[%s\]"', $gpubus);
+                $param = sprintf(' -vvt | grep -m 1 -E "\[%s\]"', $gpubus);
                 $this->runCommand(self::LSPCI, $param, false);
                 if (!empty($this->stdout) && strlen($this->stdout) > 0) {
                     $this->lspci_bridge = $this->parseInventory(self::LSPCI_REGEX2);

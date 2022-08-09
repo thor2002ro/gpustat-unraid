@@ -185,12 +185,12 @@ var keyMap = {
     'thrtlrsn':" ",                    // reason for throttling
     'sessions':" ",                    // GPU Sessions
     //intel
-    '3drender': "3D Render Load",
-    'blitter': "Blitter Load",
+    '3drender': "3D Render",
+    'blitter': "Blitter",
     'interrupts': "Interrupts/Sec",
     'powerutil': "Power Draw",
-    'video': "Video Load",
-    'videnh': "Video Enhance Load",
+    'video': "Video",
+    'videnh': "Video Enhance",
     "rxutil": "Bus Rx Util",           // used by nvidia also
     "txutil": "Bus TX Util",           // used by nvidia also
 };
