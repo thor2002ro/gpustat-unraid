@@ -89,16 +89,14 @@ const gpustat_status = function (_args) {
             $.each(data, function (key, value) {
                 var dataV = parseInt(data[key]);
 
-                if ((key === 'rxutil') || (key === 'txutil')) { // nvidia crap
-                    var dataVmax = parseInt(data["pciemax"]) || '';
-                } else if ((key === 'clock') || (key === 'memclock') || (key === 'power')) {
+                if ((key === 'clock') || (key === 'memclock') || (key === 'power')) {
                     dataV = parseFloat(data[key]);
                     var dataVmax = parseFloat(data[key + 'max']) || NaN;
                 } else {
                     var dataVmax = parseInt(data[key + 'max']) || NaN;
                 }
 
-                if (key === 'clock') {
+                if ((key === 'clock') && !isNaN(data['voltage'])) {
                     var extraV = ' @ ' + parseFloat(data['voltage']) + data['voltageunit'];
                 } else if ((key === 'memused') && data["vendor"] === 'AMD') {
                     var extraV = '\n' + 'GTT - ' + parseFloat(data['gttusedutil']) + '% - ' + parseFloat(data['gttused']) + ' / ' + parseInt(data['gttusedmax']) + data['gttusedunit'];
@@ -113,7 +111,7 @@ const gpustat_status = function (_args) {
                 console.log("dataVmax " + dataVmax);
                 console.log("$(dataVmax).length " + isNaN(dataVmax));
                 console.log("extraV " + extraV);
-                console.log("unitV " + unitV);                
+                console.log("unitV " + unitV);
                 console.log("\n"); */
 
                 if (!$('.gpu' + _args + '-' + key).parent().hasClass('gpu-stats-primary') && !isNaN(dataV) && !isNaN(dataVmax)) {
@@ -128,7 +126,7 @@ const gpustat_status = function (_args) {
                 }
                 $('.gpu' + _args + '-' + key).html(value);
             })
-            
+
             change_visibility('#gpu' + _args + '-' + 'pciegen-arrow', data["pcie_downspeed"]);
             change_visibility('#gpu' + _args + '-' + 'pciewidth-arrow', data["pcie_downwidth"]);
             change_color('.gpu' + _args + '-' + 'util', data["util"], 80, 'red');
@@ -163,10 +161,10 @@ var keyMap = {
     "memused": "Mem Usage",            // used vram
     "power": "TDP",                    // current tdp/power
     "voltage": "Voltage",              // current gpu voltage
-    'pciegen':" ",                     // current pcie gen
-    'pciegenmax':" ",                  // max pcie gen
-    'pciewidth':" ",                   // current pcie width
-    'pciewidthmax':" ",                // max pcie width
+    'pciegen': " ",                     // current pcie gen
+    'pciegenmax': " ",                  // max pcie gen
+    'pciewidth': " ",                   // current pcie width
+    'pciewidthmax': " ",                // max pcie width
     //amd
     "event": "Event",                  // Event Engine
     "vertex": "Vertex",                // Vertex Grouper + Tesselator
@@ -180,12 +178,15 @@ var keyMap = {
     "colorblk": "Color Blk",           // Color Block
     "gttused": "GTT Mem",              // used GTT
     //nvidia
-    'encutil':"Encoder Util",
-    'decutil':"Decoder Util",
-    'perfstate':"Power State",
-    'throttled':"Throttling",
-    'thrtlrsn':" ",                    // reason for throttling
-    'sessions':" ",                    // GPU Sessions
+    "sm_clock": "Shader Clock",         //?????
+    "video_clock": " Video Clock",
+    'encutil': "Encoder Util",
+    'decutil': "Decoder Util",
+    'perfstate': "Power State",
+    'throttled': "Throttling",
+    'thrtlrsn': "Throttling Reason",                    // reason for throttling
+    'sessions': " ",                    // GPU Sessions
+    'processes': " ",                    // GPU Sessions
     //intel
     '3drender': "3D Render",
     'blitter': "Blitter",
@@ -200,6 +201,8 @@ var keyMap = {
 var keyOrder = [
     //common
     "clock", "memclock",
+    //nvidia
+    "sm_clock", "video_clock",
     "fan", "power",
     //amd
     "gttused", "memused",
@@ -213,6 +216,7 @@ var keyOrder = [
     "video", "videnh",
     "interrupts",
     //nvidia
+    "encutil", "decutil",
     "rxutil", "txutil",
     "perfstate", "throttled",
     "thrtlrsn", "sessions",
@@ -224,7 +228,7 @@ const gpustat_dash_build = function (_args) {
     let gpu_data_bars = [];
     let disabled_array = [];
     let missing_array = [];
-    
+
     $.getJSON("/plugins/gpustat/gpustatus.php?argv=" + _args, (data) => {
         if (data) {
             $.each(data, function (key, value) {
@@ -232,11 +236,22 @@ const gpustat_dash_build = function (_args) {
                     (key.includes('driver')) || (key.includes('bridge_bus')) ||
                     (key.includes('passedthrough')) || (key.includes('vendor')) ||
                     (key.includes('name')) || (key.includes('temp')) ||
-                    (key.includes('util')) || (value.toString().includes('N/A')))) {
-                        gpu_data.push(key);
-                        if (!(($(data[key + 'max']).length > 0) || (value.toString().includes('%')))) {
-                            gpu_data_nobars.push(key);
-                        }
+                    (key.includes('util')) || (value.toString().includes('N/A')) ||
+                    (key.includes('appssupp')) || (key.includes('processes')) ||
+                    (key.includes('uuid')) || (key.includes('sessions')) ) ||
+                    (((key === 'rxutil') || (key === 'txutil') ||
+                    (key === 'encutil') || (key === 'decutil')) &&
+                    !(value.toString().includes('N/A'))) ) {
+
+/*                     console.log(key);
+                    console.log(data[key]);
+                    console.log(data[key + 'max']);
+                    console.log($(data[key + 'max']).length); */
+
+                    gpu_data.push(key);
+                    if ( !(($(data[key + 'max']).length > 0) || (value.toString().includes('%'))) ) {
+                        gpu_data_nobars.push(key);
+                    }
                 }
             })
 
@@ -249,7 +264,9 @@ const gpustat_dash_build = function (_args) {
             gpu_data = gpu_data.filter(function (obj) { return gpu_data_nobars.indexOf(obj) < 0; });
 
 
-/*             console.log(gpu_data);
+/*             console.log(data["name"]);
+            console.log(data);
+            console.log(gpu_data);
             console.log(disabled_array);
             console.log(missing_array);
             console.log(gpu_data_nobars);
@@ -265,7 +282,7 @@ const gpustat_dash_build = function (_args) {
 
                 if (gpu_data[i + 1]) {
                     $clone = $clone.replaceAll("'hidden'", '');
-                }                
+                }
                 // etc
                 $("#target-dash-gpustat" + _args).append($clone);
             }
@@ -284,7 +301,7 @@ const gpustat_dash_build = function (_args) {
                 }
                 if (gpu_data_nobars[i + 2]) {
                     $clone = $clone.replace("'hidden'", '');
-                }        
+                }
                 // etc
                 $("#target-dash-gpustat" + _args).append($clone);
             }

@@ -75,10 +75,10 @@ switch ($gpu_vendor) {
             <td></td>
             <td class='next' colspan='3'>
                 <i class='icon-hardware'></i>
-                <div class='section'>GPU3 - <span class='gpu3-vendor'></span>&nbsp;<span class='gpu3-name'></span>&nbsp;<span>(<span class='gpu3-passedthrough'></span>)</span>&nbsp;<br>
+                <div class='section' >GPU3 - <span class='gpu3-vendor'></span>&nbsp;<span class='gpu3-name'></span>&nbsp;<span>(<span class='gpu3-passedthrough'></span>)</span>&nbsp;<br>
                     <?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>");
                     else : ?>
-                        <div style="display: table;">
+                        <div style="display: table; display: -webkit-box; display: -moz-box; display: -ms-flexbox; display: -webkit-flex; display: flex;">
                             <div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span class='gpu3-util'></span></div>
                             <?php if ($gpu_nv || $gpu_amd) : ?>
                                 <?php if ($gpustat_cfg['DISPTEMP']) : ?>
@@ -91,7 +91,7 @@ switch ($gpu_vendor) {
                                 <?php endif; ?>
                             <?php endif; ?>
                             <?php if ($gpu_nv || $gpu_amd) : ?>
-                                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu3-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu3-pciegen'></span><span id='gpu3-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span>&nbsp;-&nbsp;<span class='gpu3-pciewidth'></span><span id='gpu3-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span></div>
+                                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu3-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu3-pciegen'></span><span id='gpu3-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red; display: inline;'></span><span>&nbsp;-&nbsp;</span><span class='gpu3-pciewidth'></span><span id='gpu3-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red; display: inline;'></span></div>
                             <?php endif; ?>
                         <?php endif; ?>
                         </div>

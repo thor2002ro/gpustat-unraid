@@ -253,12 +253,19 @@ include_once './plugins/gpustat/gpustatus.php';
   Graphics Translation Usage:
   : <select id="DISPGTTUSEDUTIL" name="DISPGTTUSEDUTIL" size="1">
     <?= mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "0", "No"); ?>
-    <?=mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "1", "Yes");?>
+    <?= mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "1", "Yes"); ?>
   </select>
 
-<br><br><br>
 
-: <input id="btnApply" type="submit" value="Apply"><input type="button" value="Done" onClick="done()">
+  Debug:
+  : <select id="UIDEBUG" name="UIDEBUG" size="1">
+    <?= mk_option($gpustat_cfg['UIDEBUG'], "0", "No"); ?>
+    <?= mk_option($gpustat_cfg['UIDEBUG'], "1", "Yes"); ?>
+  </select>
+
+  <br><br><br>
+
+  : <input id="btnApply" type="submit" value="Apply"><input type="button" value="Done" onClick="done()">
 
   <br><br><br>
   Note: Where noted, not all metrics are provided by the vendor utilities and this plugin cannot magically make that work.

@@ -78,7 +78,7 @@ switch ($gpu_vendor) {
                 <div class='section'>GPU2 - <span class='gpu2-vendor'></span>&nbsp;<span class='gpu2-name'></span>&nbsp;<span>(<span class='gpu2-passedthrough'></span>)</span>&nbsp;<br>
                     <?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>");
                     else : ?>
-                        <div style="display: table;">
+                        <div style="display: table; display: -webkit-box; display: -moz-box; display: -ms-flexbox; display: -webkit-flex; display: flex;">
                             <div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span class='gpu2-util'></span></div>
                             <?php if ($gpu_nv || $gpu_amd) : ?>
                                 <?php if ($gpustat_cfg['DISPTEMP']) : ?>
@@ -91,7 +91,7 @@ switch ($gpu_vendor) {
                                 <?php endif; ?>
                             <?php endif; ?>
                             <?php if ($gpu_nv || $gpu_amd) : ?>
-                                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu2-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu2-pciegen'></span><span id='gpu2-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span>&nbsp;-&nbsp;<span class='gpu2-pciewidth'></span><span id='gpu2-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span></div>
+                                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu2-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu2-pciegen'></span><span id='gpu2-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red; display: inline;'></span>&nbsp;-&nbsp;<span class='gpu2-pciewidth'></span><span id='gpu2-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red; display: inline;'></span></div>
                             <?php endif; ?>
                         <?php endif; ?>
                         </div>

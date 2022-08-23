@@ -5,17 +5,17 @@ namespace gpustat\lib;
 use JsonException;
 
 /**
- * Class Intel
+ * Class FakeIntel
  * @package gpustat\lib
  */
-class Intel extends Main
+class FakeIntel extends Main
 {
-    const CMD_UTILITY = 'intel_gpu_top';
+    const CMD_UTILITY = 'ps';
     const INVENTORY_UTILITY = 'lspci';
     const INVENTORY_PARAM = "| grep VGA";
     const INVENTORY_REGEX =
     '/VGA.+:\s+Intel\s+Corporation\s+(?P<model>.*)\s+(\[|Family|Integrated|Graphics|Controller|Series|\()/iU';
-    const STATISTICS_PARAM = '-J -s 250';
+    const STATISTICS_PARAM = '';
     const STATISTICS_WRAPPER = 'timeout -k .500 .400';
 
     /**
@@ -37,26 +37,13 @@ class Intel extends Main
     {
         $result = $inventory = [];
 
-        if ($this->cmdexists) {
-            $this->checkCommand(self::INVENTORY_UTILITY, false);
-            if ($this->cmdexists) {
-                $this->runCommand(self::INVENTORY_UTILITY, self::INVENTORY_PARAM, false);
-                if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                    $this->parseInventory(self::INVENTORY_REGEX);
-                }
-                if (!empty($this->inventory)) {
-                    // Only one iGPU per system, so mark it ID 99 and pad other results
-                    $inventory[] = [
-                        'vendor'        => 'Intel',
-                        'id'            => 99,
-                        'model'         => $this->inventory[0]['model'],
-                        'guid'          => '0000-00-000-000000',
-                    ];
-                    $result = $inventory;
-                }
-            }
-        }
-
+        $inventory[] = [
+            'vendor'        => 'Intel',
+            'id'            => 99,
+            'model'         => '640',
+            'guid'          => '0000-00-FAKE-000000',
+        ];
+        $result = $inventory;
         return $result;
     }
 
@@ -169,6 +156,24 @@ class Intel extends Main
         } else {
             $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_BAD_PARSE);
         }
+
+        $this->pageData = [
+            'vendor'        => $this->praseGPU($gpu)[0],
+            'name'          => $this->praseGPU($gpu)[1],
+            '3drender'      => '50%',
+            'blitter'       => '25%',
+            'interrupts'    => '421',
+            'powerutil'     => '50%',
+            'video'         => '80%',
+            'videnh'        => '50%',
+            'util'          => '50%',
+            'rxutil'        => '50.50 MB/s',
+            'txutil'        => '25.20 MB/s',
+            'power'         => '10W',
+            'clock'         => '825',
+
+        ];
+
         $this->echoJson();
     }
 }
