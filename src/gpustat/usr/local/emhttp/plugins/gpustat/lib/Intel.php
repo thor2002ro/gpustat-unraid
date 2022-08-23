@@ -38,7 +38,7 @@ class Intel extends Main
     const INVENTORY_UTILITY = 'lspci';
     const INVENTORY_PARAM = "| grep VGA";
     const INVENTORY_REGEX =
-        '/VGA.+:\s+Intel\s+Corporation\s+(?P<model>.*)\s+(\[|Family|Integrated|Graphics|Controller|Series|\()/iU';
+    '/VGA.+:\s+Intel\s+Corporation\s+(?P<model>.*)\s+(\[|Family|Integrated|Graphics|Controller|Series|\()/iU';
     const STATISTICS_PARAM = '-J -s 250';
     const STATISTICS_WRAPPER = 'timeout -k .500 .400';
 
@@ -107,7 +107,7 @@ class Intel extends Main
     private function parseStatistics(string $gpu)
     {
         // JSON output from intel_gpu_top with multiple array indexes isn't properly formatted
-        $stdout = "[" . str_replace('}{', '},{', str_replace(["\n","\t"], '', $this->stdout)) . "]";
+        $stdout = "[" . str_replace('}{', '},{', str_replace(["\n", "\t"], '', $this->stdout)) . "]";
 
         try {
             $data = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
@@ -169,7 +169,7 @@ class Intel extends Main
                 // Older versions of intel_gpu_top in case people haven't updated
                 if (isset($data['power']['value'])) {
                     $this->pageData['power'] = $this->roundFloat($data['power']['value'], 2) . $data['power']['unit'];
-                // Newer version of intel_gpu_top includes GPU and package power readings, just scrape GPU for now
+                    // Newer version of intel_gpu_top includes GPU and package power readings, just scrape GPU for now
                 } elseif (isset($data['power']['GPU'])) {
                     $this->pageData['power'] = $this->roundFloat($data['power']['GPU'], 2) . $data['power']['unit'];
                 }

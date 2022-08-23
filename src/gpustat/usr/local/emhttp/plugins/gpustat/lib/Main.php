@@ -188,15 +188,15 @@ class Main
      */
     public static function prasePCIEgen(float $pciespeed_in)
     {
-        if ($pciespeed_in=='2.5') {
+        if ($pciespeed_in == '2.5') {
             return 1;
-        } else if ($pciespeed_in=='5') {
+        } else if ($pciespeed_in == '5') {
             return 2;
-        } else if ($pciespeed_in=='8') {
+        } else if ($pciespeed_in == '8') {
             return 3;
-        } else if ($pciespeed_in=='16') {
+        } else if ($pciespeed_in == '16') {
             return 4;
-        } else if ($pciespeed_in=='32' || $pciespeed_in=='25') {
+        } else if ($pciespeed_in == '32' || $pciespeed_in == '25') {
             return 5;
         } else {
             return 0;
@@ -256,8 +256,8 @@ class Main
      */
     protected static function convertCelsius(int $temp = 0): float
     {
-        $fahrenheit = $temp*(9/5)+32;
-        
+        $fahrenheit = $temp * (9 / 5) + 32;
+
         return round($fahrenheit, -1, PHP_ROUND_HALF_UP);
     }
 
@@ -271,7 +271,7 @@ class Main
     protected static function roundFloat(float $number, int $precision = 0): float
     {
         if ($precision > 0) {
-            $result = number_format(round($number, $precision, PHP_ROUND_HALF_UP), $precision, '.','');
+            $result = number_format(round($number, $precision, PHP_ROUND_HALF_UP), $precision, '.', '');
         } else {
             $result = round($number, $precision, PHP_ROUND_HALF_UP);
         }

@@ -198,7 +198,7 @@ class AMD extends Main
         $result = [];
         $bridge = [];
         $gpubus = $this->praseGPU($gpu)[2];
-        $bridgebus = $this->praseGPU($gpu)[3];//$this->getpciebridge($this->praseGPU($gpu)[3])['bridge_chip'];
+        $bridgebus = $this->praseGPU($gpu)[3]; //$this->getpciebridge($this->praseGPU($gpu)[3])['bridge_chip'];
         if ($this->cmdexists) {
             $this->checkCommand(self::LSPCI, false);
             if ($this->cmdexists) {
@@ -315,25 +315,25 @@ class AMD extends Main
 
                     if ($this->settings['DISP' . strtoupper($values[0])] || $this->settings['DISP' . strtoupper($values[2])]) {
                         $fields[1] = str_replace(PHP_EOL, '', $fields[1]);
-                        $fields1_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i',$fields[1]);                                                               
+                        $fields1_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i', $fields[1]);
                         $this->pageData[$values[0]] = $fields1_clean[0];
                         if (isset($fields1_clean[1])) {
                             $this->pageData[$values[0] . 'unit'] = $fields1_clean[1];
                         }
                         if (isset($fields[2])) {
                             $fields[2] = str_replace(PHP_EOL, '', $fields[2]);
-                            $fields2_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i',$fields[2]);                                                               
+                            $fields2_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i', $fields[2]);
                             $this->pageData[$values[1]] = $fields2_clean[0];
                             if (isset($fields2_clean[1])) {
                                 $this->pageData[$values[1] . 'unit'] = $fields2_clean[1];
                             }
                         }
 
-                        if (($fields[0] == 'vram') || ($fields[0] == 'gtt') || 
-                            ($fields[0] == 'mclk') || ($fields[0] == 'sclk')) { 
-                            $this->pageData[$values[1] . 'max'] = $this->roundFloat(floatval((($fields2_clean[0])*100/($fields1_clean[0]))), 2);
+                        if (($fields[0] == 'vram') || ($fields[0] == 'gtt') ||
+                            ($fields[0] == 'mclk') || ($fields[0] == 'sclk')
+                        ) {
+                            $this->pageData[$values[1] . 'max'] = $this->roundFloat(floatval((($fields2_clean[0]) * 100 / ($fields1_clean[0]))), 2);
                         }
-                  
                     } elseif ($fields[0] == 'gpu') {
                         // GPU Load doesn't have a setting, for now just pass the check
                         $this->pageData[$values[0]] = $this->roundFloat(floatval($fields[1]), 1) . '%';

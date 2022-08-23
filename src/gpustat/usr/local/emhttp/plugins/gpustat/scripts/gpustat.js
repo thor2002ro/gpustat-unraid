@@ -128,7 +128,7 @@ const gpustat_status = function (_args) {
                 }
                 $('.gpu' + _args + '-' + key).html(value);
             })
-
+            
             change_visibility('#gpu' + _args + '-' + 'pciegen-arrow', data["pcie_downspeed"]);
             change_visibility('#gpu' + _args + '-' + 'pciewidth-arrow', data["pcie_downwidth"]);
             change_color('.gpu' + _args + '-' + 'util', data["util"], 80, 'red');
@@ -154,6 +154,8 @@ const gpustat_dash = function (_args) {
 
 var keyMap = {
     //common
+    //"util": "Load",
+    //"temp": "Temperature",
     "clock": "Clock",                  // gpu clock
     "fan": "Fan Speed",                // current fan speed
     "fanmax": "Fan Speed Max",         // max fan speed

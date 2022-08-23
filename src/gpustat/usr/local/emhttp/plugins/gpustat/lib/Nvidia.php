@@ -67,7 +67,7 @@ class Nvidia extends Main
      *
      * @param SimpleXMLElement $process
      */
-    private function detectApplication (SimpleXMLElement $process)
+    private function detectApplication(SimpleXMLElement $process)
     {
         foreach (self::SUPPORTED_APPS as $app => $commands) {
             foreach ($commands as $command) {
@@ -159,7 +159,7 @@ class Nvidia extends Main
      *
      * @param string $name
      */
-    private function getProductName (string $name)
+    private function getProductName(string $name)
     {
         // Some product names include NVIDIA and we already set it to be Vendor + Product Name
         if (stripos($name, 'NVIDIA') !== false) {
@@ -179,7 +179,7 @@ class Nvidia extends Main
      *
      * @param SimpleXMLElement $data
      */
-    private function getSensorData (SimpleXMLElement $data)
+    private function getSensorData(SimpleXMLElement $data)
     {
         if ($this->settings['DISPTEMP']) {
             if (isset($data->temperature)) {
@@ -212,7 +212,7 @@ class Nvidia extends Main
                 foreach ($data->clocks_throttle_reasons->children() as $reason => $throttle) {
                     if ($throttle == 'Active') {
                         $this->pageData['throttled'] = 'Yes';
-                        $this->pageData['thrtlrsn'] = ' (' . $this->stripText(['clocks_throttle_reason_','_setting'], $reason) . ')';
+                        $this->pageData['thrtlrsn'] = ' (' . $this->stripText(['clocks_throttle_reason_', '_setting'], $reason) . ')';
                         break;
                     }
                 }
@@ -310,12 +310,12 @@ class Nvidia extends Main
             ];
 
             // Set App HW Usage Defaults
-            foreach (self::SUPPORTED_APPS AS $app => $process) {
+            foreach (self::SUPPORTED_APPS as $app => $process) {
                 $this->pageData[$app . "using"] = false;
                 $this->pageData[$app . "mem"] = 0;
                 $this->pageData[$app . "count"] = 0;
             }
-            
+
             $this->pageData['vendor'] = 'NVIDIA';
 
             if (isset($data->product_name)) {

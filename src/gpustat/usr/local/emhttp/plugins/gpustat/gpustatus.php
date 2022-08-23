@@ -60,11 +60,11 @@ if (isset($gpustat_inventory) && $gpustat_inventory) {
         $argument1 = $_GET['argv'];
     }
 
-    $GPUNR='';
+    $GPUNR = '';
     if (isset($argument1)) {
-        $GPUNR=$argument1;
+        $GPUNR = $argument1;
     } else {
-        $GPUNR='1';
+        $GPUNR = '1';
     }
 
     if (!isset($gpustat_cfg["GPU{$GPUNR}"])) {

@@ -2,7 +2,7 @@ Menu="Dashboard"
 Icon="gpustat.png"
 ---
 <?php
-    /*
+/*
       MIT License
 
       Copyright (c) 2020-2022 b3rs3rk
@@ -25,39 +25,37 @@ Icon="gpustat.png"
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
     */
-    require_once('plugins/gpustat/lib/Main.php');
-    use gpustat\lib\Main;
+require_once('plugins/gpustat/lib/Main.php');
 
-    $gpustat_cfg = parse_plugin_cfg('gpustat', true);
+use gpustat\lib\Main;
 
-    $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
+$gpustat_cfg = parse_plugin_cfg('gpustat', true);
 
-    $apps = [
-        'plex', 'jellyfin', 'handbrake', 'emby', 'tdarr', 'unmanic', 'dizquetv',
-        'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
-    ];
+$gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
 
-    $gpu_vendor = strtolower(Main::praseGPU($gpustat_cfg["GPU1"])[0]);
+$apps = [
+    'plex', 'jellyfin', 'handbrake', 'emby', 'tdarr', 'unmanic', 'dizquetv',
+    'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
+];
 
-    switch ($gpu_vendor) {
-        case "nvidia":
-            $gpu_nv = true;
-            break;
-        case "intel":
-            $gpu_intel = true;
-            break;
-        case "amd":
-            $gpu_amd = true;
-            break;
-        default:
-            // If vendor isn't set the config hasn't been saved, don't render the plugin
-            $gpu_unknown = true;
-            $unknown_msg = "Default GPU set - Change GPU in GPUStat settings page and apply.";
-    }
+$gpu_vendor = strtolower(Main::praseGPU($gpustat_cfg["GPU1"])[0]);
 
-    //$gpu_nv = true;
-    //$gpu_intel = true;
-    //$gpu_amd = true;
+switch ($gpu_vendor) {
+    case "nvidia":
+        $gpu_nv = true;
+        break;
+    case "intel":
+        $gpu_intel = true;
+        break;
+    case "amd":
+        $gpu_amd = true;
+        break;
+    default:
+        // If vendor isn't set the config hasn't been saved, don't render the plugin
+        $gpu_unknown = true;
+        $unknown_msg = "Default GPU set - Change GPU in GPUStat settings page and apply.";
+}
+
 ?>
 
 <style type="text/css">
@@ -65,42 +63,55 @@ Icon="gpustat.png"
 </style>
 
 <table id='db-box1' class='dash_gpustat1' style='display:none'>
-    <thead sort='953'><tr class='hidden'><td></td><td colspan='3'></td><td></td></tr></thead>
+    <thead sort='953'>
+        <tr class='hidden'>
+            <td></td>
+            <td colspan='3'></td>
+            <td></td>
+        </tr>
+    </thead>
     <tbody id="target-dash-gpustat1" sort='953' class='sortable'>
         <tr>
             <td></td>
             <td class='next' colspan='3'>
                 <i class='icon-hardware'></i>
                 <div class='section'>GPU1 - <span class='gpu1-vendor'></span>&nbsp;<span class='gpu1-name'></span>&nbsp;<span>(<span class='gpu1-passedthrough'></span>)</span>&nbsp;<br>
-<?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>"); else : ?>
-                <div style="display: table;"><div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span class='gpu1-util'></span></div>
-<?php if ($gpu_nv || $gpu_amd) : ?>
-<?php if($gpustat_cfg['DISPTEMP']) : ?>
-                <div title="Temperature" class="gpu-stats-primary"><span class="fa fa-thermometer-half fa-2x"></span><span class='gpu1-temp'></span></div>
-<?php endif; ?>
-<?php endif; ?>
-<?php if ($gpu_nv) : ?>
-<?php if ($gpustat_cfg['DISPSESSIONS']) : ?>
-                <div title="Processes" class="gpu-stats-primary"><span class="fa fa-slack fa-2x"></span><span class='gpu1-sessions'></span></div>
-<?php endif; ?>
-<?php endif; ?>
-                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu1-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu1-pciegen'></span><span id='gpu1-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span>&nbsp;-&nbsp;<span class='gpu1-pciewidth'></span><span id='gpu1-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span></div></div>
+                    <?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>");
+                    else : ?>
+                        <div style="display: table;">
+                            <div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span class='gpu1-util'></span></div>
+                            <?php if ($gpu_nv || $gpu_amd) : ?>
+                                <?php if ($gpustat_cfg['DISPTEMP']) : ?>
+                                    <div title="Temperature" class="gpu-stats-primary"><span class="fa fa-thermometer-half fa-2x"></span><span class='gpu1-temp'></span></div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            <?php if ($gpu_nv) : ?>
+                                <?php if ($gpustat_cfg['DISPSESSIONS']) : ?>
+                                    <div title="Processes" class="gpu-stats-primary"><span class="fa fa-slack fa-2x"></span><span class='gpu1-sessions'></span></div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                            <?php if ($gpu_nv || $gpu_amd) : ?>
+                                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu1-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu1-pciegen'></span><span id='gpu1-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span>&nbsp;-&nbsp;<span class='gpu1-pciewidth'></span><span id='gpu1-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red'></span></div>
+
+                            <?php endif; ?>
+                        <?php endif; ?>
+                        </div>
                 </div>
-<?php endif; ?>
                 <i class='fa fa-fw chevron mt0' id='dash_gpustat_toggle1' onclick='toggleChevron("dash_gpustat_toggle1",0)'></i>
                 <a href='/Settings/GPUStatSettings' id='dash_gpustat_settings' title='Go to GPU Statistics settings'><i class='fa fa-fw fa-cog chevron mt0'></i></a>
             </td>
             <td></td>
         </tr>
-<?php if ($gpu_unknown) : printf("\t</tbody>\n</table>"); else : ?>
-        <tr class="dash_gpustat_toggle1 gpu1-enviro">
-            <td></td>
-        </tr>
-<?php endif; ?>
+        <?php if ($gpu_unknown) : printf("\t</tbody>\n</table>");
+        else : ?>
+            <tr class="dash_gpustat_toggle1 gpu1-enviro">
+                <td></td>
+            </tr>
+        <?php endif; ?>
     </tbody>
 </table>
 
-<script id="message-template-bars" type ="text/template">
+<script id="message-template-bars" type="text/template">
     <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
             <td><span>{{label1}}</span><span class='hidden'> / {{label2}}</span></td>
@@ -110,7 +121,7 @@ Icon="gpustat.png"
     </tr>
 </script>
 
-<script id="message-template-simple" type ="text/template">
+<script id="message-template-simple" type="text/template">
     <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
             <td><span>{{label1}}: </span><span class='gpu{{gpuNR}}-{{stat1}}'></span></td>
@@ -122,14 +133,12 @@ Icon="gpustat.png"
 
 <script type="text/javascript" src="/plugins/gpustat/scripts/gpustat.js"></script>
 <?php if (($gpu_unknown = false) || ($gpustat_cfg['GPU1'] != "")) : ?>
-<script type="text/javascript">
-    $(gpustat_status_gpu1);
-    if (<?=$gpustat_cfg['UIREFRESH'];?>) {
-        setInterval(gpustat_status_gpu1, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']);?>);
-    }
-    $(gpustat_dash(1));
-    $(gpustat_dash_build(1));
-</script>
+    <script type="text/javascript">
+        $(gpustat_status_gpu1);
+        if (<?= $gpustat_cfg['UIREFRESH']; ?>) {
+            setInterval(gpustat_status_gpu1, <?= max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']); ?>);
+        }
+        $(gpustat_dash(1));
+        $(gpustat_dash_build(1));
+    </script>
 <?php endif; ?>
-
-
