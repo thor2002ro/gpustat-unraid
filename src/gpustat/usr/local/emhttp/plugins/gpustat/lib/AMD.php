@@ -71,7 +71,7 @@ class AMD extends Main
                     foreach ($this->inventory as $gpu) {
                         $result[] = [
                             'vendor'        => 'AMD',
-                            'id'            => "Bus ID " . $gpu['busid'],
+                            'id'            => $gpu['busid'],
                             'model'         => (string) ($gpu['product'] ?? $gpu['model']),
                             'guid'          => $gpu['busid'],
                             'bridge_chip'   => ($this->getpciebridge($gpu['busid']))['bridge_chip'],
@@ -81,26 +81,36 @@ class AMD extends Main
             }
         }
 
+        $inventory[] = [
+            'vendor'        => 'AMD',
+            'id'            => "FAKE",
+            'model'         => '6900',
+            'guid'          => 'FAKE',
+            'bridge_chip'   => NULL,
+        ];
+        $result = array_merge($result, $inventory);
+
         return $result;
     }
 
     /**
      * Retrieves AMD APU/GPU statistics
-     * 
-     * 
+     *
      * $this->settings['GPUID']
      */
     public function getStatistics(string $gpu)
     {
-        if ($this->cmdexists) {
+        if ($this->praseGPU($gpu)[2] === "FAKE") {
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/radeontop-amd-stdout.txt');
+        } else if ($this->cmdexists) {
             //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
             $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->praseGPU($gpu)[2]);
             $this->runCommand($command, self::STATISTICS_PARAM, false);
-            if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                $this->parseStatistics($gpu);
-            } else {
-                $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
-            }
+        }
+        if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+            $this->parseStatistics($gpu);
+        } else {
+            $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
         }
     }
 
@@ -111,56 +121,60 @@ class AMD extends Main
     private function getSensorData(string $gpubus): array
     {
         $sensors = [];
+        $chip = sprintf('amdgpu-pci-%1s00', $gpubus);
 
-        $this->checkCommand(self::TEMP_UTILITY, false);
-        if ($this->cmdexists) {
-            $tempFormat = '';
-            if ($this->settings['TEMPFORMAT'] == 'F') {
-                $tempFormat = '-f';
+        if ($gpubus === "FAKE") {
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-sensors-stdout.txt');
+        } else {
+            $this->checkCommand(self::TEMP_UTILITY, false);
+            if ($this->cmdexists) {
+                $tempFormat = '';
+                if ($this->settings['TEMPFORMAT'] == 'F') {
+                    $tempFormat = '-f';
+                }
+                $command = sprintf('%0s %1s %2s', self::TEMP_UTILITY, $chip, $tempFormat);
+                $this->runCommand($command, self::TEMP_PARAM, false);
             }
-            $chip = sprintf('amdgpu-pci-%1s00', $gpubus);
-            $command = sprintf('%0s %1s %2s', self::TEMP_UTILITY, $chip, $tempFormat);
-            $this->runCommand($command, self::TEMP_PARAM, false);
-            if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                $data = json_decode($this->stdout, true);
-                if (isset($data[$chip])) {
-                    $data = $data[$chip];
-                    if ($this->settings['DISPTEMP']) {
-                        if (isset($data['edge']['temp1_input'])) {
-                            $sensors['temp'] = $this->roundFloat($data['edge']['temp1_input']) . ' °' . $this->settings['TEMPFORMAT'];
-                            if (isset($data['edge']['temp1_crit'])) {
-                                $sensors['tempmax'] = $this->roundFloat($data['edge']['temp1_crit']);
-                            }
+        }
+        if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+            $data = json_decode($this->stdout, true);
+
+            if (isset($data[$chip])) {
+                $data = $data[$chip];
+                if ($this->settings['DISPTEMP']) {
+                    if (isset($data['edge']['temp1_input'])) {
+                        $sensors['temp'] = $this->roundFloat($data['edge']['temp1_input']) . ' °' . $this->settings['TEMPFORMAT'];
+                        if (isset($data['edge']['temp1_crit'])) {
+                            $sensors['tempmax'] = $this->roundFloat($data['edge']['temp1_crit']);
                         }
                     }
-                    if ($this->settings['DISPFAN']) {
-                        if (isset($data['fan1']['fan1_input'])) {
-                            $sensors['fan'] = $this->roundFloat($data['fan1']['fan1_input']);
-                            if (isset($data['fan1']['fan1_max'])) {
-                                $sensors['fanmax'] = $this->roundFloat($data['fan1']['fan1_max']);
-                            }
+                }
+                if ($this->settings['DISPFAN']) {
+                    if (isset($data['fan1']['fan1_input'])) {
+                        $sensors['fan'] = $this->roundFloat($data['fan1']['fan1_input']);
+                        if (isset($data['fan1']['fan1_max'])) {
+                            $sensors['fanmax'] = $this->roundFloat($data['fan1']['fan1_max']);
                         }
                     }
-                    if ($this->settings['DISPPWRDRAW']) {
-                        if (isset($data['power1']['power1_average'])) {
-                            $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
-                            if (isset($data['power1']['power1_cap'])) {
-                                $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
-                            }
-                        } else if (isset($data['PPT']['power1_average'])) {
-                            $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
-                            if (isset($data['PPT']['power1_cap'])) {
-                                $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
-                            }
+                }
+                if ($this->settings['DISPPWRDRAW']) {
+                    if (isset($data['power1']['power1_average'])) {
+                        $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
+                        if (isset($data['power1']['power1_cap'])) {
+                            $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
                         }
-                        if (isset($data['vddgfx']['in0_input'])) {
-                            $sensors['voltage'] = $this->roundFloat($data['vddgfx']['in0_input'], 2);
+                    } else if (isset($data['PPT']['power1_average'])) {
+                        $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
+                        if (isset($data['PPT']['power1_cap'])) {
+                            $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
                         }
+                    }
+                    if (isset($data['vddgfx']['in0_input'])) {
+                        $sensors['voltage'] = $this->roundFloat($data['vddgfx']['in0_input'], 2);
                     }
                 }
             }
         }
-
         return $sensors;
     }
 
