@@ -1,6 +1,6 @@
 # gpustat-unraid
 An UnRAID plugin for displaying GPU status
-![Screenshot](/sample/Screenshot.png?raw=true)
+![Screenshot](src/gpustat/usr/local/emhttp/plugins/gpustat/sample/Screenshot.png?raw=true)
 
 
 ## Prerequisites:
