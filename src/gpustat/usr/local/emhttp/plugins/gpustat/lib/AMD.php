@@ -80,15 +80,16 @@ class AMD extends Main
                 }
             }
         }
-
-        $inventory[] = [
-            'vendor'        => 'AMD',
-            'id'            => "FAKE",
-            'model'         => '6900',
-            'guid'          => 'FAKE',
-            'bridge_chip'   => NULL,
-        ];
-        $result = array_merge($result, $inventory);
+        if ($this->settings['UIDEBUG']) {
+            $inventory[] = [
+                'vendor'        => 'AMD',
+                'id'            => "FAKE",
+                'model'         => 'Radeon RX 6800/6800 XT / 6900 XT',
+                'guid'          => 'FAKE',
+                'bridge_chip'   => NULL,
+            ];
+            $result = array_merge($result, $inventory);
+        }
 
         return $result;
     }
@@ -101,12 +102,13 @@ class AMD extends Main
     public function getStatistics(string $gpu)
     {
         if ($this->praseGPU($gpu)[2] === "FAKE") {
-            $this->stdout = file_get_contents(__DIR__ . '/../sample/radeontop-amd-stdout.txt');
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
         } else if ($this->cmdexists) {
             //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
             $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->praseGPU($gpu)[2]);
             $this->runCommand($command, self::STATISTICS_PARAM, false);
         }
+
         if (!empty($this->stdout) && strlen($this->stdout) > 0) {
             $this->parseStatistics($gpu);
         } else {
@@ -189,49 +191,51 @@ class AMD extends Main
         $bridge = [];
         $gpubus = $this->praseGPU($gpu)[2];
         $bridgebus = $this->praseGPU($gpu)[3]; //$this->getpciebridge($this->praseGPU($gpu)[3])['bridge_chip'];
-        if ($this->cmdexists) {
+
+        if ($gpubus === "FAKE") {
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-lspci-stdout.txt');
+            $this->lspci_gpu = $this->parseInventory(self::LSPCI_REGEX);
+        } else  if ($this->cmdexists) {
             $this->checkCommand(self::LSPCI, false);
-            if ($this->cmdexists) {
-                $param = sprintf(' -vv -s %s: -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"', $gpubus);
+            $param = sprintf(' -vv -s %s: -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"', $gpubus);
+            $this->runCommand(self::LSPCI, $param, false);
+            if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+                $this->lspci_gpu = $this->parseInventory(self::LSPCI_REGEX);
+            }
+            if (($bridgebus != NULL) || ($bridgebus != '')) {
+                $param = sprintf(' -vv -s %s: -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"', $bridgebus);
                 $this->runCommand(self::LSPCI, $param, false);
                 if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                    $this->lspci_gpu = $this->parseInventory(self::LSPCI_REGEX);
+                    $this->lspci_bridge = $this->parseInventory(self::LSPCI_REGEX);
                 }
-                if (($bridgebus != NULL) || ($bridgebus != '')) {
-                    $param = sprintf(' -vv -s %s: -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"', $bridgebus);
-                    $this->runCommand(self::LSPCI, $param, false);
-                    if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                        $this->lspci_bridge = $this->parseInventory(self::LSPCI_REGEX);
-                    }
-                    if (!empty($this->lspci_bridge)) {
-                        foreach ($this->lspci_bridge as $br) {
-                            $bridge = [
-                                'pcie_speedmax'     => $br['pcie_speedmax'],
-                                'pcie_widthmax'     => $br['pcie_widthmax'],
-                                'pcie_speed'        => $br['pcie_speed'],
-                                'pcie_downspeed'    => $br['pcie_downspeed'],
-                                'pcie_width'        => $br['pcie_width'],
-                                'pcie_downwidth'    => $br['pcie_downwidth'],
-                            ];
-                        }
-                    }
-                }
-
-                if (!empty($this->lspci_gpu)) {
-                    foreach ($this->lspci_gpu as $gpu) {
-                        $result = [
-                            'pciegenmax'        => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speedmax']) ? $bridge['pcie_speedmax'] : $gpu['pcie_speedmax'])),
-                            'pciewidthmax'      => (isset($bridge['pcie_widthmax']) ? $bridge['pcie_widthmax'] : $gpu['pcie_widthmax']),
-                            'pciegen'           => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speed']) ? $bridge['pcie_speed'] : $gpu['pcie_speed'])),
-                            'pcie_downspeed'    => (int) ((isset($bridge['pcie_downspeed']) ? $bridge['pcie_downspeed'] : $gpu['pcie_downspeed']) == 'ok' ? 0 : 1),
-                            'pciewidth'         => (isset($bridge['pcie_width']) ? $bridge['pcie_width'] : $gpu['pcie_width']),
-                            'pcie_downwidth'    => (int) ((isset($bridge['pcie_downwidth']) ? $bridge['pcie_downwidth'] : $gpu['pcie_downwidth']) == 'ok' ? 0 : 1),
-                            'driver'            => $gpu['driver'],
-                            'passedthrough'     => ($gpu['driver'] == 'vfio-pci' ? "Passthrough" : "Normal"),
-                            'bridge_bus'        => $bridgebus,
+                if (!empty($this->lspci_bridge)) {
+                    foreach ($this->lspci_bridge as $br) {
+                        $bridge = [
+                            'pcie_speedmax'     => $br['pcie_speedmax'],
+                            'pcie_widthmax'     => $br['pcie_widthmax'],
+                            'pcie_speed'        => $br['pcie_speed'],
+                            'pcie_downspeed'    => $br['pcie_downspeed'],
+                            'pcie_width'        => $br['pcie_width'],
+                            'pcie_downwidth'    => $br['pcie_downwidth'],
                         ];
                     }
                 }
+            }
+        }
+
+        if (!empty($this->lspci_gpu)) {
+            foreach ($this->lspci_gpu as $gpu) {
+                $result = [
+                    'pciegenmax'        => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speedmax']) ? $bridge['pcie_speedmax'] : $gpu['pcie_speedmax'])),
+                    'pciewidthmax'      => (isset($bridge['pcie_widthmax']) ? $bridge['pcie_widthmax'] : $gpu['pcie_widthmax']),
+                    'pciegen'           => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speed']) ? $bridge['pcie_speed'] : $gpu['pcie_speed'])),
+                    'pcie_downspeed'    => (int) ((isset($bridge['pcie_downspeed']) ? $bridge['pcie_downspeed'] : $gpu['pcie_downspeed']) == 'ok' ? 0 : 1),
+                    'pciewidth'         => (isset($bridge['pcie_width']) ? $bridge['pcie_width'] : $gpu['pcie_width']),
+                    'pcie_downwidth'    => (int) ((isset($bridge['pcie_downwidth']) ? $bridge['pcie_downwidth'] : $gpu['pcie_downwidth']) == 'ok' ? 0 : 1),
+                    'driver'            => $gpu['driver'],
+                    'passedthrough'     => ($gpu['driver'] == 'vfio-pci' ? "Passthrough" : "Normal"),
+                    'bridge_bus'        => $bridgebus,
+                ];
             }
         }
         return $result;

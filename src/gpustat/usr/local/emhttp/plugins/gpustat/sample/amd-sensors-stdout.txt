@@ -1,0 +1,35 @@
+{
+   "amdgpu-pci-FAKE00":{
+      "Adapter": "PCI adapter",
+      "vddgfx":{
+         "in0_input": 0.750
+      },
+      "fan1":{
+         "fan1_input": 731.000,
+         "fan1_min": 0.000,
+         "fan1_max": 3500.000
+      },
+      "edge":{
+         "temp1_input": 31.000,
+         "temp1_crit": 85.000,
+         "temp1_crit_hyst": -273.150,
+         "temp1_emergency": 90.000
+      },
+      "junction":{
+         "temp2_input": 32.000,
+         "temp2_crit": 105.000,
+         "temp2_crit_hyst": -273.150,
+         "temp2_emergency": 110.000
+      },
+      "mem":{
+         "temp3_input": 35.000,
+         "temp3_crit": 95.000,
+         "temp3_crit_hyst": -273.150,
+         "temp3_emergency": 100.000
+      },
+      "PPT":{
+         "power1_average": 3.000,
+         "power1_cap": 210.000
+      }
+   }
+}

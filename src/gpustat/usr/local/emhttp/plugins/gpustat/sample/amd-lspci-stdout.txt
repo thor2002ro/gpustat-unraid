@@ -1,0 +1,3 @@
+		LnkCap:	Port #1, Speed 8GT/s, Width x8, ASPM L1, Exit Latency L1 <1us
+		LnkSta:	Speed 2.5GT/s (downgraded), Width x8 (ok)
+	Kernel driver in use: amdgpu
