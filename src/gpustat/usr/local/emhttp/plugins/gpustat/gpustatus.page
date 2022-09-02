@@ -132,18 +132,20 @@ switch ($gpu_vendor) {
 </script>
 
 <script id="message-template-sessions" type="text/template">
+<?php if($gpustat_cfg['DISPSESSIONS']) : ?>
     <tr id="gpu-processes" class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
             <td>Active Apps</td>
             <td colspan="2">
 <?php foreach ($apps as $app) : ?>
                 <span id="gpu{{gpuNR}}-img-span-<?= $app; ?>" class='gpu{{gpuNR}}-img-span gpu{{gpuNR}}-img-span-<?= $app; ?>'>
-                    <img id='gpu{{gpuNR}}-<?= $app; ?>' class='gpu{{gpuNR}}-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
+                    <img id='gpu{{gpuNR}}-<?= $app; ?>' class='gpu-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
                 </span>
 <?php endforeach; ?>
             </td>
             <td></td>
         </tr>
+<?php endif; ?>
 </script>
 
 <script type="text/javascript" src="/plugins/gpustat/scripts/gpustat.js"></script>

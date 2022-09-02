@@ -14,8 +14,8 @@ const gpustat_status_gpu3 = () => {
 const gpustat_status = function (_args) {
     $.getJSON("/plugins/gpustat/gpustatus.php?argv=" + _args, (data) => {
         if (data) {
-            switch (data["vendor"]) {
-                case 'NVIDIA':
+            switch ((data['vendor']).toLowerCase()) {
+                case 'nvidia':
                     // Nvidia Slider Bars
                     /*$('.gpu'+_args+'-memclockbar').removeAttr('style').css('width', data["memclock"] / data["memclockmax"] * 100 + "%");
                     $('.gpu'+_args+'-gpuclockbar').removeAttr('style').css('width', data["clock"] / data["clockmax"] * 100 + "%");
@@ -30,7 +30,7 @@ const gpustat_status = function (_args) {
 
                     if (data["appssupp"]) {
                         data["appssupp"].forEach(function (app) {
-                            if (data[app + "using"]) {
+                            if (data["processes"][app + "using"]) {
                                 $('.gpu' + _args + '-img-span-' + app).css('display', "inline");
                                 $('#gpu-' + app).attr('title', "Count: " + data[app + "count"] + " Memory: " + data[app + "mem"] + "MB");
                             } else {
@@ -40,14 +40,14 @@ const gpustat_status = function (_args) {
                         });
                     }
                     break;
-                case 'Intel':
+                case 'intel':
                     // Intel Slider Bars
                     /*  let intelbars = ['3drender', 'blitter', 'video', 'videnh', 'powerutil'];
                      intelbars.forEach(function (metric) {
                          $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                      }); */
                     break;
-                case 'AMD':
+                case 'amd':
                     /*  $('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"] / data["powermax"] * 100) + "%");
                         $('.gpu'+_args+'-fanbar').removeAttr('style').css('width', parseInt(data["fan"] / data["fanmax"] * 100) + "%");
                          let amdbars = [
@@ -286,6 +286,14 @@ const gpustat_dash_build = function (_args) {
                 if (gpu_data_nobars[i + 2]) {
                     $clone = $clone.replace("'hidden'", '');
                 }
+                // etc
+                $("#target-dash-gpustat" + _args).append($clone);
+            }
+
+            if ( (data['vendor']).toLowerCase() === "nvidia" ) {
+                var $clone = $('#message-template-sessions').html();
+                $clone = $clone.replaceAll("{{gpuNR}}", _args)
+
                 // etc
                 $("#target-dash-gpustat" + _args).append($clone);
             }
