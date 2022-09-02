@@ -128,6 +128,16 @@ class Nvidia extends Main
                 }
             }
         }
+        if ($this->settings['UIDEBUG']) {
+            $inventory[] = [
+                'vendor'        => 'Nvidia',
+                'id'            => "FAKE",
+                'model'         => 'GeForce GTX 1060 6GB',
+                'guid'          => 'FAKE',
+                'bridge_chip'   => NULL,
+            ];
+            $result = array_merge($result, $inventory);
+        }
 
         return $result;
     }
@@ -213,16 +223,19 @@ class Nvidia extends Main
      */
     public function getStatistics(string $gpu)
     {
-        if ($this->cmdexists) {
+        if ($this->praseGPU($gpu)[2] === "FAKE") {
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/nvidia-smi-stdout.txt');
+        } else   if ($this->cmdexists) {
             //Command invokes nvidia-smi in query all mode with XML return
             $this->stdout = shell_exec(self::CMD_UTILITY . ES . sprintf(self::STATISTICS_PARAM, $this->praseGPU($gpu)[2]));
-            if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                $this->parseStatistics($gpu);
-            } else {
-                $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
-            }
         } else {
             $this->pageData['error'][] = Error::get(Error::VENDOR_UTILITY_NOT_FOUND);
+        }
+
+        if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+            $this->parseStatistics($gpu);
+        } else {
+            $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
         }
     }
 
