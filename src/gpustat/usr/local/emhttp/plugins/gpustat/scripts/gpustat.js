@@ -91,17 +91,23 @@ const gpustat_status = function (_args) {
                 console.log("unitV " + unitV);
                 console.log("\n"); */
 
-                if (!$('.gpu' + _args + '-' + key).parent().hasClass('gpu-stats-primary') && !isNaN(dataV) && !isNaN(dataVmax)) {
+                if (!$('.gpu' + _args + '-' + key).parents().hasClass('gpu-stats-primary') && !isNaN(dataV) && !isNaN(dataVmax)) {
                     var _value = data[key + 'util'] || parseFloat(dataV / dataVmax * 100).toFixed(2) + "%";
                     $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', _value);
-                    $('.gpu' + _args + '-' + key).parent().attr('title', (_value + ' - ' + value + ' / ' + dataVmax + ' ' + unitV + extraV));
-                } else if (!$('.gpu' + _args + '-' + key).parent().hasClass('gpu-stats-primary')) {
+                    $('.gpu' + _args + '-' + key).parents().attr('title', (_value + ' - ' + value + ' / ' + dataVmax + ' ' + unitV + extraV));
+                } else if (!$('.gpu' + _args + '-' + key).parents().hasClass('gpu-stats-primary')) {
                     $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', value);
-                    $('.gpu' + _args + '-' + key).parent().attr('title', (value + unitV + extraV));
+                    $('.gpu' + _args + '-' + key).parents().attr('title', (value + ' ' + unitV + extraV));
                 } else {
                     $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', value);
                 }
-                $('.gpu' + _args + '-' + key).html(value);
+
+                if ($('.gpu' + _args + '-' + key).parents().is('#gpu-labels')) {
+                    $('.gpu' + _args + '-' + key).html(value + ' ' + unitV); //add unit to simple labels
+                } else {
+                    $('.gpu' + _args + '-' + key).html(value);
+                }
+
             })
 
             change_visibility('#gpu' + _args + '-' + 'pciegen-arrow', data["pcie_downspeed"]);
@@ -109,7 +115,7 @@ const gpustat_status = function (_args) {
             change_color('.gpu' + _args + '-' + 'util', data["util"], 80, 'red');
             change_color('.gpu' + _args + '-' + 'temp', data["temp"], data["tempmax"] - 15, 'red');
             change_color('#gpu' + _args + '-' + 'pcie', data["bridge_bus"], 0, 'brown');
-            change_tooltip($('#gpu' + _args + '-' + 'pcie').parent(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:' + data["bridge_bus"] + ')');
+            change_tooltip($('#gpu' + _args + '-' + 'pcie').parents(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:' + data["bridge_bus"] + ')');
             change_color_string('.gpu' + _args + '-' + 'passedthrough', data["passedthrough"], "Passthrough");
 
         }
@@ -216,18 +222,18 @@ const gpustat_dash_build = function (_args) {
                     (key.includes('name')) || (key.includes('temp')) ||
                     (key.includes('util')) || (value.toString().includes('N/A')) ||
                     (key.includes('appssupp')) || (key.includes('processes')) ||
-                    (key.includes('uuid')) || (key.includes('sessions')) ) ||
+                    (key.includes('uuid')) || (key.includes('sessions'))) ||
                     (((key === 'rxutil') || (key === 'txutil') ||
-                    (key === 'encutil') || (key === 'decutil')) &&
-                    !(value.toString().includes('N/A'))) ) {
+                        (key === 'encutil') || (key === 'decutil')) &&
+                        !(value.toString().includes('N/A')))) {
 
-/*                     console.log(key);
-                    console.log(data[key]);
-                    console.log(data[key + 'max']);
-                    console.log($(data[key + 'max']).length); */
+                    /*                     console.log(key);
+                                        console.log(data[key]);
+                                        console.log(data[key + 'max']);
+                                        console.log($(data[key + 'max']).length); */
 
                     gpu_data.push(key);
-                    if ( !(($(data[key + 'max']).length > 0) || (value.toString().includes('%'))) ) {
+                    if (!(($(data[key + 'max']).length > 0) || (value.toString().includes('%')))) {
                         gpu_data_nobars.push(key);
                     }
                 }
@@ -242,13 +248,13 @@ const gpustat_dash_build = function (_args) {
             gpu_data = gpu_data.filter(function (obj) { return gpu_data_nobars.indexOf(obj) < 0; });
 
 
-/*             console.log(data["name"]);
-            console.log(data);
-            console.log(gpu_data);
-            console.log(disabled_array);
-            console.log(missing_array);
-            console.log(gpu_data_nobars);
-            console.log(gpu_data_bars); */
+            /*             console.log(data["name"]);
+                        console.log(data);
+                        console.log(gpu_data);
+                        console.log(disabled_array);
+                        console.log(missing_array);
+                        console.log(gpu_data_nobars);
+                        console.log(gpu_data_bars); */
 
             for (var i = 0; i < gpu_data.length; i += 2) {
                 var $clone = $('#message-template-bars').html();

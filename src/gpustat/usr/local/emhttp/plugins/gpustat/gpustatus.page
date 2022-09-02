@@ -112,7 +112,7 @@ switch ($gpu_vendor) {
 </table>
 
 <script id="message-template-bars" type="text/template">
-    <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
+    <tr id="gpu-bars" class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
             <td><span>{{label1}}</span><span class='hidden'> / {{label2}}</span></td>
             <td><span class='gpu{{gpuNR}}-{{stat1}} load'></span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat1}}bar'></span><span></span></div></td>
@@ -122,7 +122,7 @@ switch ($gpu_vendor) {
 </script>
 
 <script id="message-template-simple" type="text/template">
-    <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
+    <tr id="gpu-labels" class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
             <td><span>{{label1}}: </span><span class='gpu{{gpuNR}}-{{stat1}}'></span></td>
             <td><span class='hidden'>{{label2}}: <span class='gpu{{gpuNR}}-{{stat2}}'></span></span></td>
@@ -132,7 +132,7 @@ switch ($gpu_vendor) {
 </script>
 
 <script id="message-template-sessions" type="text/template">
-    <tr class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
+    <tr id="gpu-processes" class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
             <td></td>
             <td>Active Apps</td>
             <td colspan="2">
