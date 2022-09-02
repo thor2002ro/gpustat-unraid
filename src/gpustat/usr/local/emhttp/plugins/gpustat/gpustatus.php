@@ -16,9 +16,6 @@ use gpustat\lib\Nvidia;
 use gpustat\lib\Intel;
 use gpustat\lib\Error;
 
-use gpustat\lib\FakeIntel;
-use gpustat\lib\FakeNvidia;
-
 if (!isset($gpustat_cfg)) {
     $gpustat_cfg = Main::getSettings();
 }
@@ -30,13 +27,6 @@ if (isset($gpustat_inventory) && $gpustat_inventory) {
     $inventory_nvidia = (new Nvidia($gpustat_cfg))->getInventory();
     $inventory_intel = (new Intel($gpustat_cfg))->getInventory();
     $inventory_amd = (new AMD($gpustat_cfg))->getInventory();
-
-    if ($gpustat_cfg["UIDEBUG"] === '1') {
-        $inventory_FAKEintel = (new FakeIntel($gpustat_cfg))->getInventory();
-        $inventory_FAKEnvidia = (new FakeNvidia($gpustat_cfg))->getInventory();
-        $inventory_nvidia = array_merge($inventory_nvidia, $inventory_FAKEnvidia);
-        $inventory_intel = array_merge($inventory_intel, $inventory_FAKEintel);
-    }
 
     $gpustat_data = array_merge($inventory_nvidia, $inventory_intel, $inventory_amd);
 } else {
@@ -63,18 +53,10 @@ if (isset($gpustat_inventory) && $gpustat_inventory) {
             (new AMD($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
             break;
         case 'intel':
-            if ($gpustat_cfg["UIDEBUG"] === '1') {
-                (new FakeIntel($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
-            } else {
-                (new Intel($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
-            }
+            (new Intel($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
             break;
         case 'nvidia':
-            if ($gpustat_cfg["UIDEBUG"] === '1') {
-                (new FakeNvidia($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
-            } else {
-                (new Nvidia($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
-            }
+            (new Nvidia($gpustat_cfg))->getStatistics($gpustat_cfg["GPU{$GPUNR}"]);
             break;
         default:
             print_r(Error::get(Error::CONFIG_SETTINGS_NOT_VALID));

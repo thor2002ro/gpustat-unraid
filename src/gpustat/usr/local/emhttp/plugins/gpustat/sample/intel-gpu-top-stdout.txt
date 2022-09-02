@@ -1,0 +1,108 @@
+{
+        "period": {
+                "duration": 0.030292,
+                "unit": "ms"
+        },
+        "frequency": {
+                "requested": 100.000000,
+                "actual": 100.000000,
+                "unit": "MHz"
+        },
+        "interrupts": {
+                "count": 121.000000,
+                "unit": "irq/s"
+        },
+        "rc6": {
+                "value": 95.507065,
+                "unit": "%"
+        },
+        "power": {
+                "value": 12.000000,
+                "unit": "W"
+        },
+        "imc-bandwidth": {
+                "reads": 34.253191,
+                "writes": 12.089361,
+                "unit": "MiB/s"
+        },
+        "engines": {
+                "Render/3D/0": {
+                        "busy": 52.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                },
+                "Blitter/0": {
+                        "busy": 23.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                },
+                "Video/0": {
+                        "busy": 75.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                },
+                "VideoEnhance/0": {
+                        "busy": 43.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                }
+        }
+},
+{
+        "period": {
+                "duration": 250.577540,
+                "unit": "ms"
+        },
+        "frequency": {
+                "requested": 100.000000,
+                "actual": 100.000000,
+                "unit": "MHz"
+        },
+        "interrupts": {
+                "count": 121.000000,
+                "unit": "irq/s"
+        },
+        "rc6": {
+                "value": 95.507065,
+                "unit": "%"
+        },
+        "power": {
+                "value": 12.000000,
+                "unit": "W"
+        },
+        "imc-bandwidth": {
+                "reads": 34.253191,
+                "writes": 12.089361,
+                "unit": "MiB/s"
+        },
+        "engines": {
+                "Render/3D/0": {
+                        "busy": 52.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                },
+                "Blitter/0": {
+                        "busy": 23.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                },
+                "Video/0": {
+                        "busy": 75.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                },
+                "VideoEnhance/0": {
+                        "busy": 43.000000,
+                        "sema": 0.000000,
+                        "wait": 0.000000,
+                        "unit": "%"
+                }
+        }
+}

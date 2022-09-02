@@ -67,13 +67,13 @@ class Main
             'memclock'      => 'N/A',
             'memusedutil'   => 'N/A',
             'memused'       => 'N/A',
-            'power'         => 'N/A',
+/*             'power'         => 'N/A',
             'powermax'      => 'N/A',
             'rxutil'        => 'N/A',
-            'txutil'        => 'N/A',
+            'txutil'        => 'N/A', */
             'temp'          => 'N/A',
-            'tempmax'       => 'N/A',
-            'util'          => 'N/A',
+/*             'tempmax'       => 'N/A',
+ */            'util'          => 'N/A',
         ];
     }
 
