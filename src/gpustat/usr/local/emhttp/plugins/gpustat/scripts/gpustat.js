@@ -32,10 +32,10 @@ const gpustat_status = function (_args) {
                         data["appssupp"].forEach(function (app) {
                             if (data["processes"][app + "using"]) {
                                 $('.gpu' + _args + '-img-span-' + app).css('display', "inline");
-                                $('#gpu-' + app).attr('title', "Count: " + data[app + "count"] + " Memory: " + data[app + "mem"] + "MB");
+                                $('#gpu' + _args + "-" + app).attr('title', "Count: " + data["processes"][app + "count"] + "\n" +"Memory: " + data["processes"][app + "mem"] + "MB");
                             } else {
                                 $('.gpu' + _args + '-img-span-' + app).css('display', "none");
-                                $('#gpu-' + app).attr('title', "");
+                                $('#gpu' + _args + "-" + app).attr('title', "");
                             }
                         });
                     }
@@ -91,19 +91,24 @@ const gpustat_status = function (_args) {
                 console.log("unitV " + unitV);
                 console.log("\n"); */
 
-                if (!$('.gpu' + _args + '-' + key).parents().hasClass('gpu-stats-primary') && !isNaN(dataV) && !isNaN(dataVmax)) {
+                if (!$('.gpu' + _args + '-' + key).parent().hasClass('gpu-stats-primary') && !isNaN(dataV) && !isNaN(dataVmax)) {
                     var _value = data[key + 'util'] || parseFloat(dataV / dataVmax * 100).toFixed(2) + "%";
                     $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', _value);
-                    $('.gpu' + _args + '-' + key).parents().attr('title', (_value + ' - ' + value + ' / ' + dataVmax + ' ' + unitV + extraV));
-                } else if (!$('.gpu' + _args + '-' + key).parents().hasClass('gpu-stats-primary')) {
+                    $('.gpu' + _args + '-' + key).parent().attr('title', (_value + ' - ' + value + ' / ' + dataVmax + ' ' + unitV + extraV));
+                } else if (!($('.gpu' + _args + '-' + key).parent().hasClass('gpu-stats-primary'))) {
                     $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', value);
-                    $('.gpu' + _args + '-' + key).parents().attr('title', (value + ' ' + unitV + extraV));
+                    $('.gpu' + _args + '-' + key).parent().attr('title', (value + ' ' + unitV + extraV));
                 } else {
                     $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', value);
                 }
 
                 if ($('.gpu' + _args + '-' + key).parents().is('#gpu-labels')) {
-                    $('.gpu' + _args + '-' + key).html(value + ' ' + unitV); //add unit to simple labels
+                    if (key === "throttled") {
+                        $('.gpu' + _args + '-' + key).html(value + data["thrtlrsn"]); //add throttled reason to throttled
+                        $('.gpu' + _args + '-' + key).parent().attr('title', (keyMap[key] + ": " +value + "\n" + keyMap["thrtlrsn"] + ": " + data["thrtlrsn"])); //special tooltip for throttled
+                    } else {
+                        $('.gpu' + _args + '-' + key).html(value + " " + unitV); //add unit to simple labels
+                    }
                 } else {
                     $('.gpu' + _args + '-' + key).html(value);
                 }
@@ -114,7 +119,7 @@ const gpustat_status = function (_args) {
             change_color('.gpu' + _args + '-' + 'util', data["util"], 80, 'red');
             change_color('.gpu' + _args + '-' + 'temp', data["temp"], data["tempmax"] - 15, 'red');
             change_color('#gpu' + _args + '-' + 'pcie', data["bridge_bus"], 0, 'brown');
-            change_tooltip($('#gpu' + _args + '-' + 'pcie').parents(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:' + data["bridge_bus"] + ')');
+            change_tooltip($('#gpu' + _args + '-' + 'pcie').parent(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:' + data["bridge_bus"] + ')');
             change_color_string('.gpu' + _args + '-' + 'passedthrough', data["passedthrough"], "Passthrough");
 
         }
@@ -217,6 +222,7 @@ const gpustat_dash_build = function (_args) {
             $.each(data, function (key, value) {
                 if (
                     !(
+                        value.toString().includes("N/A") ||
                         key.includes("max") ||
                         key.includes("unit") ||
                         key.includes("pcie") ||
@@ -227,11 +233,11 @@ const gpustat_dash_build = function (_args) {
                         key.includes("name") ||
                         key.includes("temp") ||
                         key.includes("util") ||
-                        value.toString().includes("N/A") ||
                         key.includes("appssupp") ||
                         key.includes("processes") ||
                         key.includes("uuid") ||
-                        key.includes("sessions")
+                        key.includes("sessions") ||
+                        key.includes("thrtlrsn")
                     ) ||
                     ((key === "rxutil" ||
                         key === "txutil" ||
