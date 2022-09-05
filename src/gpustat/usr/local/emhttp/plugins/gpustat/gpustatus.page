@@ -137,7 +137,7 @@ switch ($gpu_vendor) {
             <td>Active Apps</td>
             <td colspan="2">
 <?php foreach ($apps as $app) : ?>
-                <span id="gpu{{gpuNR}}-img-span-<?= $app; ?>" class='gpu-img-span gpu{{gpuNR}}-img-span-<?= $app; ?>'>
+                <span id="gpu{{gpuNR}}-img-span-<?= $app; ?>" class='hidden gpu{{gpuNR}}-img-span-<?= $app; ?>'>
                     <img id='gpu{{gpuNR}}-<?= $app; ?>' class='gpu-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
                 </span>
 <?php endforeach; ?>

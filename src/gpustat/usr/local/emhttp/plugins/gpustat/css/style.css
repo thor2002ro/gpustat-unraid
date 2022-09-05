@@ -22,17 +22,13 @@
   SOFTWARE.
 */
 
-#dash_gpustat_settings i, #dash_gpustat_toggle1, #dash_gpustat_toggle2, #dash_gpustat_toggle3 {
+#dash_gpustat_settings i, #dash_gpustat_toggle* {
     margin-top: 0;
 }
 
-span.gpu1, span.gpu2, span.gpu3 {
+.gpu-process {
     width: 150px;
     display: inline-block;
-}
-
-span.gpu-img-span {
-    display: none;
 }
 
 .gpu-image {
