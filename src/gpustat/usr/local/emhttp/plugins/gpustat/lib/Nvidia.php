@@ -75,6 +75,7 @@ class Nvidia extends Main
         }
     }
 
+
     /**
      * Parses PCI Bus Utilization data
      *
@@ -359,7 +360,13 @@ class Nvidia extends Main
                     $this->pageData['sessions'] = count($data->processes->process_info);
                     if ($this->pageData['sessions'] > 0) {
                         foreach ($data->processes->children() as $process) {
-                            if (isset($process->process_name)) {
+                            if ($this->praseGPU($gpu)[2] === "FAKE") {
+                                foreach (self::SUPPORTED_APPS as $app => $process) {
+                                    $this->pageData['processes'][($app . "using")]      = true;
+                                    $this->pageData['processes'][($app . "mem")]        = 25;
+                                    $this->pageData['processes'][($app . "count")]      = 2;
+                                }
+                            } else if (isset($process->process_name)) {
                                 $this->detectApplication($process);
                             }
                         }

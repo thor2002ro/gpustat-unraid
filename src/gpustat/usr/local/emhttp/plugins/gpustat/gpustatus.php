@@ -7,8 +7,6 @@ include 'lib/Nvidia.php';
 include 'lib/Intel.php';
 include 'lib/AMD.php';
 include 'lib/Error.php';
-include 'lib/FakeNvidia.php';
-include 'lib/FakeIntel.php';
 
 use gpustat\lib\AMD;
 use gpustat\lib\Main;
