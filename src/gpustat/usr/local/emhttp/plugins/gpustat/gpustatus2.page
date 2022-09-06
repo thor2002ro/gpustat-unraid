@@ -62,7 +62,7 @@ switch ($gpu_vendor) {
     @import url("/plugins/gpustat/css/style.css");
 </style>
 
-<table id='db-box1' class='dash_gpustat2' style='display:none'>
+<table id='db-box1' class='dash_gpustat2' style='display:none;'>
     <thead sort='953'>
         <tr class='hidden'>
             <td></td>

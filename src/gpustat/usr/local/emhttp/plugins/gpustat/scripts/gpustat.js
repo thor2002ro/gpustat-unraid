@@ -31,7 +31,7 @@ const gpustat_status = function (_args) {
                     if (data["appssupp"]) {
                         data["appssupp"].forEach(function (app) {
                             if (data["processes"][app + "using"]) {
-                                $('.gpu' + _args + '-img-span-' + app).css('display', "inline");
+                                $('.gpu' + _args + '-img-span-' + app).css('display', "table-cell");
                                 $('#gpu' + _args + "-" + app).attr('title', "Count: " + data["processes"][app + "count"] + "\n" +"Memory: " + data["processes"][app + "mem"] + "MB");
                             } else {
                                 $('.gpu' + _args + '-img-span-' + app).css('display', "none");
@@ -314,7 +314,6 @@ const gpustat_dash_build = function (_args) {
             if (data["vendor"].toLowerCase() === "nvidia") {
                 var $clone = $('#message-template-sessions').html();
                 $clone = $clone.replaceAll("{{gpuNR}}", _args)
-
                 // etc
                 $("#target-dash-gpustat" + _args).append($clone);
             }
