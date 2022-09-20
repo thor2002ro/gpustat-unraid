@@ -103,7 +103,7 @@ class AMD extends Main
     {
         if ($this->praseGPU($gpu)[2] === "FAKE") {
             $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
-        } else if ($this->cmdexists) {
+        } else if (($this->getpciedata($gpu)["passedthrough"] === "Normal") && ($this->cmdexists)) {
             //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
             $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->praseGPU($gpu)[2]);
             $this->runCommand($command, self::STATISTICS_PARAM, false);
@@ -112,7 +112,7 @@ class AMD extends Main
         if (!empty($this->stdout) && strlen($this->stdout) > 0) {
             $this->parseStatistics($gpu);
         } else {
-            $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            $this->pageData['error'] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
         }
     }
 
@@ -287,6 +287,7 @@ class AMD extends Main
             'perfstate'     => 'N/A',
             'throttled'     => 'N/A',
             'thrtlrsn'      => 'N/A',
+            'util'          => 'N/A',
         ];
 
         $this->pageData += [
