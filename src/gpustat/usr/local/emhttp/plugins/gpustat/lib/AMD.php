@@ -37,7 +37,7 @@ class AMD extends Main
     const TEMP_PARAM = '-j 2>errors';
 
     const LSPCI_REGEX =
-    '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.*),\s[Width]*\s(?P<pcie_widthmax>.*),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.*)\s\((?P<pcie_downspeed>.*)\),\s[Width]*\s(?P<pcie_width>.*)\s\((?P<pcie_downwidth>.*)\).*+\n.+Kernel driver in use:\s(?P<driver>.*)\n/imU';
+    '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.*),\s[Width]*\s(?P<pcie_widthmax>.*),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.*)(\s(?P<pcie_downspeed>.*))?,\s[Width]*\s(?P<pcie_width>.*)(\s(?P<pcie_downwidth>.*))?\n.+Kernel driver in use:\s(?P<driver>.*)$/imU';
 
     const LSPCI_REGEX2 = '/^.*-\[(?P<pcie1>.*)(?:-(?P<pcie2>.*))?\]-/imU';
 
@@ -195,7 +195,7 @@ class AMD extends Main
         if ($gpubus === "FAKE") {
             $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-lspci-stdout.txt');
             $this->lspci_gpu = $this->parseInventory(self::LSPCI_REGEX);
-        } else  if ($this->cmdexists) {
+        } else if ($this->cmdexists) {
             $this->checkCommand(self::LSPCI, false);
             $param = sprintf(' -vv -s %s: -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"', $gpubus);
             $this->runCommand(self::LSPCI, $param, false);
