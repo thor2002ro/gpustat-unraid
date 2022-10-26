@@ -26,13 +26,13 @@
 >
 
 <!-- try to install utils -->
-<FILE Name="&plgPATH;/igt-gpu-tools;-&version;.txz" Min="6.10" Run="upgradepkg --install-new">
-    <URL>&pkgURL;/igt-gpu-tools;-&version;.txz</URL>
+<FILE Name="&plgPATH;/igt-gpu-tools-&version;.tgz" Min="6.10" Run="upgradepkg --install-new">
+    <URL>&pkgURL;/igt-gpu-tools-&version;.tgz</URL>
 </FILE>
 
 <!-- try to install utils -->
-<FILE Name="&plgPATH;/radeontop;-&version;.txz" Min="6.10" Run="upgradepkg --install-new">
-    <URL>&pkgURL;/igt-gpu-tools;-&version;.txz</URL>
+<FILE Name="&plgPATH;/radeontop-&version;.tgz" Min="6.10" Run="upgradepkg --install-new">
+    <URL>&pkgURL;/radeontop-&version;.tgz</URL>
 </FILE>
 
  <!-- The 'pre-install' script. -->

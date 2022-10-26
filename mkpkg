@@ -16,6 +16,11 @@ sed -i -e "s#\(ENTITY\s*date[^\"]*\).*#\1\"${DATE}\">#" "$PLG_FILE"
 cd "$START/src/$PLUGIN"
 "./../../makepkg" -l y -c y "$PACKAGE"
 
+cd "$START/gpu_tools"
+./make_intel-gpu-tools.sh
+./make_radeontop_pkg.sh
+cd "$START"
+
 function md5_dir {
 for file in $1/*;
 do
