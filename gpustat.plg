@@ -3,13 +3,14 @@
 <!ENTITY name      "gpustat">
 <!ENTITY author    "b3rs3rk">
 <!ENTITY mod       "thor2002ro">
-<!ENTITY version   "2022.10.03-thor2002ro">
+<!ENTITY date      "2022.10.26">
+<!ENTITY version   "&date;-x86_64-thor">
 <!ENTITY launch    "Settings/GPUStatSettings">
 <!ENTITY gitURL    "https://raw.githubusercontent.com/thor2002ro/&name;-unraid/master">
 <!ENTITY pluginURL "&gitURL;/&name;.plg">
 <!ENTITY pkgURL    "&gitURL;/pkg">
 <!ENTITY plgPATH   "/boot/config/plugins/&name;">
-<!ENTITY plgNAME   "&name;-&version;-x86_64">
+<!ENTITY plgNAME   "&name;-&version;">
 <!ENTITY emhttp    "/usr/local/emhttp/plugins/&name;">
 ]>
 
@@ -24,142 +25,33 @@
     pluginURL="&pluginURL;"
 >
 
-<!--
-  MIT License
+<!-- try to install utils -->
+<FILE Name="&plgPATH;/igt-gpu-tools;-&version;.txz" Min="6.10" Run="upgradepkg --install-new">
+    <URL>&pkgURL;/igt-gpu-tools;-&version;.txz</URL>
+</FILE>
 
-  Copyright (c) 2020-2022 b3rs3rk
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
--->
-
-<CHANGES>
-###2022-02-22
-- #35 Fix jellyfin app detection looking for the wrong image path
-
-###2022-02-20
-- PR #30 Add Shinobi Pro app detection for Nvidia (thanks @corgan2222!)
-- PR #30 Add nsfminer app detection for Nvidia (thanks @corgan2222!)
-- #32 Reactivate Emby app detection for Nvidia with specific emby command requirement (may not work for all containers)
-- #33 Add Folding@Home app detection
-- Loop application image display instead of repetitive HTML
-
-###2021-04-24
-- Add DizqueTV app detection (NVIDIA) #25
-- Add deepstack app detection (NVIDIA) #26
-
-###2021-03-28
-- Fix for new Intel GPU Top not outputting proper JSON (backwards compatible)
-- Add Unmanic app detection
-- Refines app detection to allow argument searching instead of just the base command from nvidia-smi
-
-###2021-03-25
-- [RELEASE] AMD Sensor Support
- * Implement lm-sensors support
- * Adds dashboard output for Temperature (APU/GPU)
- * Adds dashboard output for Power Draw and Fan Utilization (GPU only)
-
-###2021-03-19
-- [RELEASE] AMD GPU Support
- * AMD GPU Support via RadeonTop Plugin by @ich777
- * Handbrake App Detection (NVIDIA) #21
- * Tdarr App Detection (NVIDIA) #19
- * GPU Long name reduction #20
-
-###2021-02-21
-- [RELEASE] Various fixes and slight improvements
- * Fix for Chrome showing active application icons stretched vertically (NVIDIA) - #17
- * Fix for dashboard render issues relating to cards that don't support PCI utilization metrics (NVIDIA)
- * Move total sessions display to dashboard header to avoid confusion
- * Add hover (alt) to application icons so that individual app processes count and memory usage will be displayed
-
-###2021-01-21
-- Fix plugin errors on boot
- * Switch pre-install script from php to bash
-
-###2021-01-20
-- [RELEASE] Basic App Support
- * Fix PCI Util bug with older Nvidia GPUs
- * Make metric collections settings deterministic
- * Refactor error methodology
- * Segmentation of scripts and styles from page code
- * Refactor dashboard update code (replaced setTimeout recursion)
-
-###2021-01-17
-- [RELEASE] Various fixes
- * Implement PCI Utilization slider for NVIDIA
- * Fix issue with plugin not installing on boot
-
-###2021-01-15
-- Fix for default settings fiasco
-
-###2021-01-13
-- [RELEASE] Implement iGPU Support
- * Slight Nvidia changes to reduce plugin size with all metrics enabled
- * Add PCI/IMC Bus Utilization for NVIDIA/Intel
- * Make dashboard refresh interval configurable
- * Thanks to @ich777 for all of his help in testing Intel
-
-###2021-01-08
-- [RELEASE] Switch to slider bars instead of raw data output
- * GPUStat plugin now refreshes data on 6.9
- * Thanks to @mlapaglia for the contribution
-
-###2020-04-18
-- [BETA] Allow User selectable metrics to be displayed in widget
- * Go to settings and select the desired metrics after update
-
-###2020-03-14
-- [BETA] Implement Multi-GPU Selectability
- * Select desired GPU for dashboard display from retrieved inventory
- * Select desired temperature format (F/C)
-
-###2020-03-10
-- [BETA] Implement more NVIDIA data readings
- * Clock Speeds (GPU/MEM)
- * Encoder/Decoder Utilization
- * Power State (P0-8)
- * Throttle Check/Reason
-
-###2020-03-08
-- [BETA] Fix formatting to be more UnRAID-like
-
-###2020-03-06
-- [BETA] Implements basic NVIDIA Support for single-GPU systems
-</CHANGES>
+<!-- try to install utils -->
+<FILE Name="&plgPATH;/radeontop;-&version;.txz" Min="6.10" Run="upgradepkg --install-new">
+    <URL>&pkgURL;/igt-gpu-tools;-&version;.txz</URL>
+</FILE>
 
  <!-- The 'pre-install' script. -->
 <FILE Run="/bin/bash">
 <INLINE>
 
-if [ "$(which nvidia-smi 2>/dev/null)" ] || [ -d /boot/config/plugins/nvidia-driver ]; then
+if [ "$(which nvidia-smi 2>/dev/null)" ]; then
     echo "********************************************************************"
     echo
     echo "NVIDIA vendor utility found. Continuing install."
     echo
     echo "********************************************************************"
-elif [ "$(which intel_gpu_top 2>/dev/null)" ] || [ -d /boot/config/plugins/intel-gpu-top ]; then
+elif [ "$(which intel_gpu_top 2>/dev/null)" ]; then
     echo "********************************************************************"
     echo
     echo "Intel vendor utility found. Continuing install."
     echo
     echo "********************************************************************"
-elif [ "$(which radeontop 2>/dev/null)" ] || [ -d /boot/config/plugins/radeontop ]; then
+elif [ "$(which radeontop 2>/dev/null)" ]; then
     echo "********************************************************************"
     echo
     echo "AMD vendor utility found. Continuing install."
@@ -183,6 +75,14 @@ fi
   <URL>&pkgURL;/&plgNAME;.txz</URL>
  </FILE>
 
+<FILE Run="/bin/bash">
+<INLINE>
+
+chmod -R 777 /dev/dri
+
+</INLINE>
+</FILE>
+
  <!-- Install default plugin cfg  -->
  <FILE Name="/boot/config/plugins/gpustat/gpustat.cfg">
   <INLINE>
@@ -204,7 +104,7 @@ fi
     DISPTHROTTLE="1"
     DISPSESSIONS="1"
     UIREFRESH="1"
-    UIREFRESHINT="1000"
+    UIREFRESHINT="6000"
     DISPMEMUTIL="1"
     DISP3DRENDER="1"
     DISPBLITTER="1"
@@ -231,6 +131,7 @@ fi
    <INLINE>
     echo "Removing &name;..."
     removepkg &plgPATH;/*.txz
+    removepkg &plgPATH;/*.tgz
     rm -rf &plgPATH;
     rm -rf &emhttp;
     echo "&name; has been removed"

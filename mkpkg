@@ -5,15 +5,32 @@ START="$(pwd)"
 PLUGIN=gpustat
 ARCHIVE="$START/pkg"
 PLG_FILE="$PLUGIN.plg"
-VERSION=$(date +"%Y.%m.%d")-thor2002ro
-ARCH="-x86_64"
-PACKAGE="$ARCHIVE/$PLUGIN-$VERSION$ARCH.txz"
-MD5="$ARCHIVE/$PLUGIN-$VERSION$ARCH.md5"
+DATE=$(date +"%Y.%m.%d")
+ARCH="x86_64"
+VERSION="$DATE-$ARCH-thor"
+PACKAGE="$ARCHIVE/$PLUGIN-$VERSION.txz"
+MD5="$ARCHIVE/$PLUGIN-$VERSION.md5"
 
-sed -i -e "s#\(ENTITY\s*version[^\"]*\).*#\1\"${VERSION}\">#" "$PLG_FILE"
-sed -i "/##&name/a\###${VERSION}" "$PLG_FILE"
+sed -i -e "s#\(ENTITY\s*date[^\"]*\).*#\1\"${DATE}\">#" "$PLG_FILE"
 
 cd "$START/src/$PLUGIN"
 "./../../makepkg" -l y -c y "$PACKAGE"
-cd "$ARCHIVE/"
-md5sum $(basename "$PACKAGE") >"$MD5"
+
+function md5_dir {
+for file in $1/*;
+do
+        if [[ -f "$file" && ! $file == *.md5 ]];
+        then
+                file_basename=$(basename "$file");
+                echo "$file" "$file_basename";
+                md5sum "$file" > "$file.md5";
+        fi;
+        if [[ -d "$file" ]];
+        then
+                md5_dir $file
+        fi;
+done;
+}
+
+md5_dir "$ARCHIVE"
+
