@@ -1,5 +1,29 @@
 <?php
 
+/*
+  MIT License
+
+  Copyright (c) 2020-2022 b3rs3rk
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
 namespace gpustat\lib;
 
 /** @noinspection PhpIncludeInspection */
@@ -32,11 +56,6 @@ class Main
     /**
      * @var array
      */
-    protected $gpu_lspci;
-
-    /**
-     * @var array
-     */
     protected $pageData;
 
     /**
@@ -62,18 +81,18 @@ class Main
         $this->inventory = [];
 
         $this->pageData = [
-            'clock'         => 'N/A',
-            'fan'           => 'N/A',
-            'memclock'      => 'N/A',
-            'memusedutil'   => 'N/A',
-            'memused'       => 'N/A',
-/*             'power'         => 'N/A',
-            'powermax'      => 'N/A',
-            'rxutil'        => 'N/A',
-            'txutil'        => 'N/A', */
-            'temp'          => 'N/A',
-/*             'tempmax'       => 'N/A',
- */            'util'          => 'N/A',
+            'clock'     => 'N/A',
+            'fan'       => 'N/A',
+            'memclock'  => 'N/A',
+            'memutil'   => 'N/A',
+            'memused'   => 'N/A',
+            'power'     => 'N/A',
+            'powermax'  => 'N/A',
+            'rxutil'    => 'N/A',
+            'txutil'    => 'N/A',
+            'temp'      => 'N/A',
+            'tempmax'   => 'N/A',
+            'util'      => 'N/A',
         ];
     }
 
@@ -83,7 +102,7 @@ class Main
      * @param string $utility
      * @param bool $error
      */
-    protected function checkCommand(string $utility, $error = true)
+    protected function checkCommand(string $utility, bool $error = true)
     {
         $this->cmdexists = false;
         // Check if vendor utility is available
@@ -106,7 +125,7 @@ class Main
      * @param string $argument
      * @param bool $escape
      */
-    protected function runCommand(string $command, string $argument = '', $escape = true)
+    protected function runCommand(string $command, string $argument = '', bool $escape = true)
     {
         if ($escape) {
             $this->stdout = shell_exec(sprintf("%s %s", $command, escapeshellarg($argument)));
@@ -127,7 +146,26 @@ class Main
         $file = sprintf('/proc/%0d/cmdline', $pid);
 
         if (file_exists($file)) {
-            $command = trim(file_get_contents($file), "\0");
+            $command = trim(@file_get_contents($file), "\0");
+        }
+
+        return $command;
+    }
+
+    /**
+     * Retrieves the full command of a parent process with arguments for a given process ID
+     *
+     * @param int $pid
+     * @return string
+     */
+    protected function getParentCommand(int $pid): string
+    {
+        $command = '';
+        $pid_command = sprintf('ps j %0d | awk \'{ \$1=\$1 };NR>1\' | cut -d \' \' -f 1', $pid);
+
+        $ppid = (int)trim(shell_exec($pid_command));
+        if ($ppid > 0) {
+            $command = $this->getFullCommand($ppid);
         }
 
         return $command;
@@ -145,41 +183,6 @@ class Main
     }
 
     /**
-     * prase gpu line
-     * [0] name
-     * [1] bus
-     *
-     * @return mixed
-     */
-    public static function praseGPU(string $gpu)
-    {
-        return explode('|||||', $gpu);
-    }
-
-    /**
-     * prase lspci gpu speed to pcie gen
-     * return pcie gen nr
-     *
-     * @return mixed
-     */
-    public static function prasePCIEgen(float $pciespeed_in)
-    {
-        if ($pciespeed_in == '2.5') {
-            return 1;
-        } else if ($pciespeed_in == '5') {
-            return 2;
-        } else if ($pciespeed_in == '8') {
-            return 3;
-        } else if ($pciespeed_in == '16') {
-            return 4;
-        } else if ($pciespeed_in == '32' || $pciespeed_in == '25') {
-            return 5;
-        } else {
-            return 0;
-        }
-    }
-
-    /**
      * Triggers regex match all against class variable stdout and places matches in class variable inventory
      *
      * @param string $regex
@@ -191,27 +194,6 @@ class Main
         return $ret;
     }
 
-    /**
-     * Echoes JSON to web renderer -- used to populate page data
-     */
-    protected function echoJson()
-    {
-        // Page file JavaScript expects a JSON encoded string
-        if (is_array($this->pageData)) {
-            // If errors exist, do not encode anything else for send
-            if (isset($this->pageData['errors'])) {
-                $json = json_encode($this->pageData['errors']);
-            } else {
-                $json = json_encode($this->pageData);
-            }
-            header('Content-Type: application/json');
-            header('Content-Length:' . ES . strlen($json));
-            echo $json;
-        } else {
-            // Can't echo JSON for debug, so print_r for array data
-            print_r(Error::get(Error::BAD_ARRAY_DATA));
-        }
-    }
 
     /**
      * Strips all spaces from a provided string
@@ -232,9 +214,9 @@ class Main
      */
     protected static function convertCelsius(int $temp = 0): float
     {
-        $fahrenheit = $temp * (9 / 5) + 32;
-
-        return round($fahrenheit, -1, PHP_ROUND_HALF_UP);
+        $fahrenheit = $temp*(9/5)+32;
+        
+        return round($fahrenheit, -1);
     }
 
     /**
@@ -247,9 +229,9 @@ class Main
     protected static function roundFloat(float $number, int $precision = 0): float
     {
         if ($precision > 0) {
-            $result = number_format(round($number, $precision, PHP_ROUND_HALF_UP), $precision, '.', '');
+            $result = number_format(round($number, $precision), $precision, '.','');
         } else {
-            $result = round($number, $precision, PHP_ROUND_HALF_UP);
+            $result = round($number, $precision);
         }
 
         return $result;
@@ -265,5 +247,28 @@ class Main
     protected static function stripText($strip, string $string)
     {
         return str_replace($strip, '', $string);
+    }
+
+        /**
+     * prase lspci gpu speed to pcie gen
+     * return pcie gen nr
+     *
+     * @return mixed
+     */
+    public static function prasePCIEgen(float $pciespeed_in)
+    {
+        if ($pciespeed_in == '2.5') {
+            return 1;
+        } else if ($pciespeed_in == '5') {
+            return 2;
+        } else if ($pciespeed_in == '8') {
+            return 3;
+        } else if ($pciespeed_in == '16') {
+            return 4;
+        } else if ($pciespeed_in == '32' || $pciespeed_in == '25') {
+            return 5;
+        } else {
+            return 0;
+        }
     }
 }

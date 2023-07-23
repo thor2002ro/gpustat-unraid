@@ -4,7 +4,7 @@ Title="GPU Statistics"
 ---
 
 <?php
-/*
+    /*
       MIT License
 
       Copyright (c) 2020-2022 b3rs3rk
@@ -28,247 +28,312 @@ Title="GPU Statistics"
       SOFTWARE.
     */
 
-$gpustat_cfg        = parse_plugin_cfg("gpustat", true);
-$gpustat_inventory  = true;
+    function save_ini_file($file, $array) {
+       $plugin = "gpustat";
 
-include_once './plugins/gpustat/gpustatus.php';
+	  $res = array();
+      foreach($array as $key => $val) {
+        if(is_array($val)) {
+          $res[] = PHP_EOL."[$key]";
+          foreach($val as $skey => $sval) $res[] = "$skey = ".(is_numeric($sval) ? $sval : '"'.$sval.'"');
+        } else {
+          $res[] = "$key = ".(is_numeric($val) ? $val : '"'.$val.'"');
+         }
+      }
+
+      /* Write changes to tmp file. */
+      file_put_contents($file, implode(PHP_EOL, $res));
+
+      /* Write changes to flash. */
+      $file_path = pathinfo($file);
+      if ($file_path['extension'] == "cfg") {
+        file_put_contents("/boot/config/plugins/".$plugin."/".basename($file), implode(PHP_EOL, $res));
+      }
+    }
+
+    function save_cfg($val,$gpus) {
+
+        $json_array = array() ;
+          foreach ($val['MULTIGPU'] as $pciid) {
+            $gpupciid = $pciid ;
+            $json_array[$pciid]['id'] = $gpus[$gpupciid]['id'] ;
+            $json_array[$pciid]['model'] = $gpus[$gpupciid]['model'] ;
+            $json_array[$pciid]['vendor'] = $gpus[$gpupciid]['vendor'] ;
+            $json_array[$pciid]['guid'] = $gpus[$gpupciid]['guid'] ;
+            $json_array[$pciid]['bridge_chip'] = $gpus[$gpupciid]['bridge_chip'] ;
+          }
+
+        $val["MULTIGPUJSON"] = urlencode(json_encode($json_array)) ;
+        if (isset($val['MULTIGPU'])) {      
+          if($val['MULTIGPU'] != "") $val['MULTIGPU'] = implode("," , $val['MULTIGPU']) ;
+        } else $val['MULTIGPU'] = "" ;
+      
+      save_ini_file("gpustat.cfg", $val) ;
+    }
+
+    $cfg = $gpustat_cfg        = parse_plugin_cfg("gpustat", true);
+    $gpustat_inventory  = true;
+
+      include_once './plugins/gpustat/gpustatus.php';
+
+    if (count($_POST)) {
+      $cfg = NULL ;
+      if ($_POST['#apply'] == "_(Apply)_") {
+        array_map(function($k, $v) use (&$cfg) { if($k[0] != "#") $cfg[$k] = $v; }, array_keys($_POST), $_POST );
+        save_cfg($cfg,$gpustat_data) ;
+        $gpustat_cfg        = parse_plugin_cfg("gpustat", true);
+        unset($_POST) ;
+      } 
+    }
+
 ?>
+<script>
+$(function() {
+  $('#MULTIGPU').dropdownchecklist({emptyText:"_(None)_", width:166});
+});
+</script>
 
 <h2><b>Runtime</b></h2>
-<form markdown="1" name="gpustat" method="POST" action="/update.php" target="progressFrame">
-  <input type="hidden" name="#file" value="gpustat/gpustat.cfg" />
+<form markdown="1" name="gpustat" method="POST" >
+<input type="hidden" name="#file" value="gpustat/gpustat.cfg" />
 
-  GPU1:
-  : <select id="GPU1" name="GPU1" size="1">
-    <?php
-    if (isset($gpustat_data)) {
-      printf(mk_option($gpustat_cfg['GPU1'], "", "None"));
-      foreach ($gpustat_data as $gpu) {
-        $gpudesc = sprintf('%s: %s - %s - %s', $gpu['id'], $gpu['vendor'], $gpu['model'], $gpu['guid']);
-        printf(mk_option($gpustat_cfg['GPU1'], sprintf('%s|||||%s|||||%s|||||%s', $gpu['vendor'], $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
-      }
+<style>
+    /* Styles for the custom list-like appearance */
+    .gpu-custom-list {
+        list-style: none;
+        width: 500px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 0;
+        max-height: 150px;
+        overflow-y: auto;
     }
-    ?>
-  </select>
 
-  GPU2:
-  : <select id="GPU2" name="GPU2" size="1">
-    <?php
-    if (isset($gpustat_data)) {
-      printf(mk_option($gpustat_cfg['GPU2'], "", "None"));
-      foreach ($gpustat_data as $gpu) {
-        $gpudesc = sprintf('%s: %s - %s - %s', $gpu['id'], $gpu['vendor'], $gpu['model'], $gpu['guid']);
-        printf(mk_option($gpustat_cfg['GPU2'], sprintf('%s|||||%s|||||%s|||||%s', $gpu['vendor'], $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
-      }
+    .gpu-custom-list li {
+        cursor: pointer;
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
     }
-    ?>
-  </select>
+</style>
 
-  GPU3:
-  : <select id="GPU3" name="GPU3" size="1">
-    <?php
-    if (isset($gpustat_data)) {
-      printf(mk_option($gpustat_cfg['GPU3'], "", "None"));
-      foreach ($gpustat_data as $gpu) {
-        $gpudesc = sprintf('%s: %s - %s - %s', $gpu['id'], $gpu['vendor'], $gpu['model'], $gpu['guid']);
-        printf(mk_option($gpustat_cfg['GPU3'], sprintf('%s|||||%s|||||%s|||||%s', $gpu['vendor'], $gpu['model'], $gpu['guid'], $gpu['bridge_chip']), $gpudesc));
-      }
+Unit ID for Dashboard(Multiple):
+: <ul class="gpu-custom-list">
+
+<?php	
+if (isset($gpustat_data)) {
+    foreach ($gpustat_data as $gpu) {
+        $gpudesc = sprintf(
+            '%s: %s%s%s',
+            $gpu['id'],
+            $gpu['model'],
+            isset($gpu['bridge_chip']) ? ' - ' . $gpu['bridge_chip'] : '', // Include '- $gpu['bridge_chip']' if it exists
+            isset($gpu['guid']) ? ' - ' . $gpu['guid'] : '' // Include '- $gpu['guid']' if it exists
+        );
+        $gpuid = $gpu['id'];
+        $checked = in_array($gpuid, explode(',', $gpustat_cfg['MULTIGPU'])) ? " checked" : "";
+        echo "<li><input type='checkbox' name='MULTIGPU[]' value='$gpuid'$checked> $gpudesc</li>";
     }
-    ?>
+}
+?>
+</ul>
+
+Temperature Format:
+: <select id="TEMPFORMAT" name="TEMPFORMAT" size="1">
+    <?=mk_option($gpustat_cfg['TEMPFORMAT'], "C", "Celsius");?>
+    <?=mk_option($gpustat_cfg['TEMPFORMAT'], "F", "Fahrenheit");?>
   </select>
 
-  Temperature Format:
-  : <select id="TEMPFORMAT" name="TEMPFORMAT" size="1">
-    <?= mk_option($gpustat_cfg['TEMPFORMAT'], "C", "Celsius"); ?>
-    <?= mk_option($gpustat_cfg['TEMPFORMAT'], "F", "Fahrenheit"); ?>
+UI Automatic Refresh / Interval (Milliseconds):
+: <select id="UIREFRESH" name="UIREFRESH" size="1">
+    <?=mk_option($gpustat_cfg['UIREFRESH'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['UIREFRESH'], "1", "Yes");?>
+  </select>
+  <input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="1000">
+
+<h2><b>Enabled Pollers</b></h2>
+
+<h4><b>Multiple Vendors</b></h4>
+
+GPU and Memory Clocks (Nvidia/Intel/AMD):
+: <select id="DISPCLOCKS" name="DISPCLOCKS" size="1">
+    <?=mk_option($gpustat_cfg['DISPCLOCKS'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPCLOCKS'], "1", "Yes");?>
   </select>
 
-  UI Automatic Refresh / Interval (Milliseconds):
-  : <select id="UIREFRESH" name="UIREFRESH" size="1">
-    <?= mk_option($gpustat_cfg['UIREFRESH'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['UIREFRESH'], "1", "Yes"); ?>
-  </select>
-  <input type="text" title="5000+ recommanded" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?= $gpustat_cfg['UIREFRESHINT']; ?>" placeholder="5000">
-
-  <h2><b>Enabled Pollers</b></h2>
-
-  <h4><b>Multiple Vendors</b></h4>
-
-  GPU and Memory Clocks (Nvidia/Intel/AMD):
-  : <select id="DISPCLOCKS" name="DISPCLOCKS" size="1">
-    <?= mk_option($gpustat_cfg['DISPCLOCKS'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPCLOCKS'], "1", "Yes"); ?>
+PCI/IMC Utilization (Nvidia/Intel):
+: <select id="DISPPCIUTIL" name="DISPPCIUTIL" size="1">
+    <?=mk_option($gpustat_cfg['DISPPCIUTIL'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPPCIUTIL'], "1", "Yes");?>
   </select>
 
-  PCI/IMC Utilization (Nvidia/Intel):
-  : <select id="DISPPCIUTIL" name="DISPPCIUTIL" size="1">
-    <?= mk_option($gpustat_cfg['DISPPCIUTIL'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPPCIUTIL'], "1", "Yes"); ?>
+Power Draw (Nvidia/Intel/AMD**):
+: <select id="DISPPWRDRAW" name="DISPPWRDRAW" size="1">
+    <?=mk_option($gpustat_cfg['DISPPWRDRAW'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPPWRDRAW'], "1", "Yes");?>
   </select>
 
-  Power Draw (Nvidia/Intel/AMD**):
-  : <select id="DISPPWRDRAW" name="DISPPWRDRAW" size="1">
-    <?= mk_option($gpustat_cfg['DISPPWRDRAW'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPPWRDRAW'], "1", "Yes"); ?>
+Power State (Nvidia/Intel):
+: <select id="DISPPWRSTATE" name="DISPPWRSTATE" size="1">
+    <?=mk_option($gpustat_cfg['DISPPWRSTATE'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPPWRSTATE'], "1", "Yes");?>
   </select>
 
-  Power State (Nvidia/Intel):
-  : <select id="DISPPWRSTATE" name="DISPPWRSTATE" size="1">
-    <?= mk_option($gpustat_cfg['DISPPWRSTATE'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPPWRSTATE'], "1", "Yes"); ?>
+Memory Utilization (Nvidia/AMD):
+: <select id="DISPMEMUSEDUTIL" name="DISPMEMUSEDUTIL" size="1">
+    <?=mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "1", "Yes");?>
   </select>
 
-  Memory Utilization (Nvidia/AMD):
-  : <select id="DISPMEMUSEDUTIL" name="DISPMEMUSEDUTIL" size="1">
-    <?= mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "1", "Yes"); ?>
+Temperature (Nvidia/AMD):
+: <select id="DISPTEMP" name="DISPTEMP" size="1">
+    <?=mk_option($gpustat_cfg['DISPTEMP'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPTEMP'], "1", "Yes");?>
   </select>
 
-  Temperature (Nvidia/AMD):
-  : <select id="DISPTEMP" name="DISPTEMP" size="1">
-    <?= mk_option($gpustat_cfg['DISPTEMP'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPTEMP'], "1", "Yes"); ?>
+Fan Usage (Nvidia/AMD**):
+: <select id="DISPFAN" name="DISPFAN" size="1">
+    <?=mk_option($gpustat_cfg['DISPFAN'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPFAN'], "1", "Yes");?>
   </select>
 
-  Fan Usage (Nvidia/AMD**):
-  : <select id="DISPFAN" name="DISPFAN" size="1">
-    <?= mk_option($gpustat_cfg['DISPFAN'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPFAN'], "1", "Yes"); ?>
+<h4><b>Nvidia Specific</b></h4>
+
+Encoder / Decoder Utilization:
+: <select id="DISPENCDEC" name="DISPENCDEC" size="1">
+    <?=mk_option($gpustat_cfg['DISPENCDEC'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPENCDEC'], "1", "Yes");?>
   </select>
 
-  <h4><b>Nvidia Specific</b></h4>
-
-  Encoder / Decoder Utilization:
-  : <select id="DISPENCDEC" name="DISPENCDEC" size="1">
-    <?= mk_option($gpustat_cfg['DISPENCDEC'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPENCDEC'], "1", "Yes"); ?>
+Throttle Status:
+: <select id="DISPTHROTTLE" name="DISPTHROTTLE" size="1">
+    <?=mk_option($gpustat_cfg['DISPTHROTTLE'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPTHROTTLE'], "1", "Yes");?>
   </select>
 
-  Throttle Status:
-  : <select id="DISPTHROTTLE" name="DISPTHROTTLE" size="1">
-    <?= mk_option($gpustat_cfg['DISPTHROTTLE'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPTHROTTLE'], "1", "Yes"); ?>
+Active Sessions:
+: <select id="DISPSESSIONS" name="DISPSESSIONS" size="1">
+    <?=mk_option($gpustat_cfg['DISPSESSIONS'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPSESSIONS'], "1", "Yes");?>
   </select>
 
-  Active Sessions:
-  : <select id="DISPSESSIONS" name="DISPSESSIONS" size="1">
-    <?= mk_option($gpustat_cfg['DISPSESSIONS'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPSESSIONS'], "1", "Yes"); ?>
+<h4><b>Intel Specific</b></h4>
+
+3D Render Load:
+: <select id="DISP3DRENDER" name="DISP3DRENDER" size="1">
+    <?=mk_option($gpustat_cfg['DISP3DRENDER'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISP3DRENDER'], "1", "Yes");?>
   </select>
 
-  <h4><b>Intel Specific</b></h4>
-
-  3D Render Load:
-  : <select id="DISP3DRENDER" name="DISP3DRENDER" size="1">
-    <?= mk_option($gpustat_cfg['DISP3DRENDER'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISP3DRENDER'], "1", "Yes"); ?>
+Blitter Load:
+: <select id="DISPBLITTER" name="DISPBLITTER" size="1">
+    <?=mk_option($gpustat_cfg['DISPBLITTER'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPBLITTER'], "1", "Yes");?>
   </select>
 
-  Blitter Load:
-  : <select id="DISPBLITTER" name="DISPBLITTER" size="1">
-    <?= mk_option($gpustat_cfg['DISPBLITTER'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPBLITTER'], "1", "Yes"); ?>
+Video Load:
+: <select id="DISPVIDEO" name="DISPVIDEO" size="1">
+    <?=mk_option($gpustat_cfg['DISPVIDEO'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPVIDEO'], "1", "Yes");?>
   </select>
 
-  Video Load:
-  : <select id="DISPVIDEO" name="DISPVIDEO" size="1">
-    <?= mk_option($gpustat_cfg['DISPVIDEO'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPVIDEO'], "1", "Yes"); ?>
+Video Enhance Load:
+: <select id="DISPVIDENH" name="DISPVIDENH" size="1">
+    <?=mk_option($gpustat_cfg['DISPVIDENH'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPVIDENH'], "1", "Yes");?>
   </select>
 
-  Video Enhance Load:
-  : <select id="DISPVIDENH" name="DISPVIDENH" size="1">
-    <?= mk_option($gpustat_cfg['DISPVIDENH'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPVIDENH'], "1", "Yes"); ?>
+Interrupts Per Second:
+: <select id="DISPINTERRUPT" name="DISPINTERRUPT" size="1">
+    <?=mk_option($gpustat_cfg['DISPINTERRUPT'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPINTERRUPT'], "1", "Yes");?>
   </select>
 
-  Interrupts Per Second:
-  : <select id="DISPINTERRUPT" name="DISPINTERRUPT" size="1">
-    <?= mk_option($gpustat_cfg['DISPINTERRUPT'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPINTERRUPT'], "1", "Yes"); ?>
+Power Draw Selection:
+: <select id="DISPPWRDRWSEL" name="DISPPWRDRWSEL" size="1">
+    <?=mk_option($gpustat_cfg['DISPPWRDRWSEL'], "GPU", "GPU");?>
+    <?=mk_option($gpustat_cfg['DISPPWRDRWSEL'], "PACKAGE", "Package");?>
+    <?=mk_option($gpustat_cfg['DISPPWRDRWSEL'], "MAX", "Max of GPU or Package");?>
+  </select>  
+
+<h4><b>AMD Specific</b></h4>
+
+Event Engine Usage:
+: <select id="DISPEVENT" name="DISPEVENT" size="1">
+    <?=mk_option($gpustat_cfg['DISPEVENT'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPEVENT'], "1", "Yes");?>
   </select>
 
-  <h4><b>AMD Specific</b></h4>
-
-  Event Engine Usage:
-  : <select id="DISPEVENT" name="DISPEVENT" size="1">
-    <?= mk_option($gpustat_cfg['DISPEVENT'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPEVENT'], "1", "Yes"); ?>
+Vertex Tesselator Usage:
+: <select id="DISPVERTEX" name="DISPVERTEX" size="1">
+    <?=mk_option($gpustat_cfg['DISPVERTEX'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPVERTEX'], "1", "Yes");?>
   </select>
 
-  Vertex Tesselator Usage:
-  : <select id="DISPVERTEX" name="DISPVERTEX" size="1">
-    <?= mk_option($gpustat_cfg['DISPVERTEX'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPVERTEX'], "1", "Yes"); ?>
+Texture Addresser Usage:
+: <select id="DISPTEXTURE" name="DISPTEXTURE" size="1">
+    <?=mk_option($gpustat_cfg['DISPTEXTURE'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPTEXTURE'], "1", "Yes");?>
   </select>
 
-  Texture Addresser Usage:
-  : <select id="DISPTEXTURE" name="DISPTEXTURE" size="1">
-    <?= mk_option($gpustat_cfg['DISPTEXTURE'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPTEXTURE'], "1", "Yes"); ?>
+Shader Export Usage:
+: <select id="DISPSHADEREXP" name="DISPSHADEREXP" size="1">
+    <?=mk_option($gpustat_cfg['DISPSHADEREXP'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPSHADEREXP'], "1", "Yes");?>
   </select>
 
-  Shader Export Usage:
-  : <select id="DISPSHADEREXP" name="DISPSHADEREXP" size="1">
-    <?= mk_option($gpustat_cfg['DISPSHADEREXP'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPSHADEREXP'], "1", "Yes"); ?>
+Sequencer Cache Usage:
+: <select id="DISPSEQUENCER" name="DISPSEQUENCER" size="1">
+    <?=mk_option($gpustat_cfg['DISPSEQUENCER'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPSEQUENCER'], "1", "Yes");?>
   </select>
 
-  Sequencer Cache Usage:
-  : <select id="DISPSEQUENCER" name="DISPSEQUENCER" size="1">
-    <?= mk_option($gpustat_cfg['DISPSEQUENCER'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPSEQUENCER'], "1", "Yes"); ?>
+Shader Interpolator Usage:
+: <select id="DISPSHADERINTER" name="DISPSHADERINTER" size="1">
+    <?=mk_option($gpustat_cfg['DISPSHADERINTER'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPSHADERINTER'], "1", "Yes");?>
   </select>
 
-  Shader Interpolator Usage:
-  : <select id="DISPSHADERINTER" name="DISPSHADERINTER" size="1">
-    <?= mk_option($gpustat_cfg['DISPSHADERINTER'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPSHADERINTER'], "1", "Yes"); ?>
+Scan Converter Usage:
+: <select id="DISPSCANCON" name="DISPSCANCON" size="1">
+    <?=mk_option($gpustat_cfg['DISPSCANCON'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPSCANCON'], "1", "Yes");?>
   </select>
 
-  Scan Converter Usage:
-  : <select id="DISPSCANCON" name="DISPSCANCON" size="1">
-    <?= mk_option($gpustat_cfg['DISPSCANCON'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPSCANCON'], "1", "Yes"); ?>
+Primitive Assembly Usage:
+: <select id="DISPPRIMASSEM" name="DISPPRIMASSEM" size="1">
+    <?=mk_option($gpustat_cfg['DISPPRIMASSEM'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPPRIMASSEM'], "1", "Yes");?>
   </select>
 
-  Primitive Assembly Usage:
-  : <select id="DISPPRIMASSEM" name="DISPPRIMASSEM" size="1">
-    <?= mk_option($gpustat_cfg['DISPPRIMASSEM'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPPRIMASSEM'], "1", "Yes"); ?>
+Depth Block Usage:
+: <select id="DISPDEPTHBLK" name="DISPDEPTHBLK" size="1">
+    <?=mk_option($gpustat_cfg['DISPDEPTHBLK'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPDEPTHBLK'], "1", "Yes");?>
   </select>
 
-  Depth Block Usage:
-  : <select id="DISPDEPTHBLK" name="DISPDEPTHBLK" size="1">
-    <?= mk_option($gpustat_cfg['DISPDEPTHBLK'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPDEPTHBLK'], "1", "Yes"); ?>
+Color Block Usage:
+: <select id="DISPCOLORBLK" name="DISPCOLORBLK" size="1">
+    <?=mk_option($gpustat_cfg['DISPCOLORBLK'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPCOLORBLK'], "1", "Yes");?>
   </select>
 
-  Color Block Usage:
-  : <select id="DISPCOLORBLK" name="DISPCOLORBLK" size="1">
-    <?= mk_option($gpustat_cfg['DISPCOLORBLK'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPCOLORBLK'], "1", "Yes"); ?>
+Graphics Translation Usage:
+: <select id="DISPGTTUSEDUTIL" name="DISPGTTUSEDUTIL" size="1">
+    <?=mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "0", "No");?>
+    <?=mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "1", "Yes");?>
   </select>
 
-  Graphics Translation Usage:
-  : <select id="DISPGTTUSEDUTIL" name="DISPGTTUSEDUTIL" size="1">
-    <?= mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "0", "No"); ?>
-    <?= mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "1", "Yes"); ?>
-  </select>
-
-
-  Debug:
-  : <select id="UIDEBUG" name="UIDEBUG" size="1">
+Debug:
+: <select id="UIDEBUG" name="UIDEBUG" size="1">
     <?= mk_option($gpustat_cfg['UIDEBUG'], "0", "No"); ?>
     <?= mk_option($gpustat_cfg['UIDEBUG'], "1", "Yes"); ?>
   </select>
+<br><br><br>
 
-  <br><br><br>
+: <input id="btnApply" type="submit" name="#apply" value="_(Apply)_"><input type="button" value="Done" onClick="done()">
 
-  : <input id="btnApply" type="submit" value="Apply"><input type="button" value="Done" onClick="done()">
-
-  <br><br><br>
-  Note: Where noted, not all metrics are provided by the vendor utilities and this plugin cannot magically make that work.
-  <br><br><br>
-  **Metric is available for discrete AMD GPUs and not APUs
+<br><br><br>
+Note: Where noted, not all metrics are provided by the vendor utilities and this plugin cannot magically make that work.
+<br><br><br>
+**Metric is available for discrete AMD GPUs and not APUs
 </form>

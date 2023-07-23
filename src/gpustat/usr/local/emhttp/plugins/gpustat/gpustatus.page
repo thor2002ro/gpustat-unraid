@@ -1,8 +1,9 @@
-Menu="Dashboard"
+Menu="Dashboard:0"
 Icon="gpustat.png"
+Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0-beta5', '>')"
 ---
 <?php
-/*
+    /*
       MIT License
 
       Copyright (c) 2020-2022 b3rs3rk
@@ -25,22 +26,98 @@ Icon="gpustat.png"
       OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
       SOFTWARE.
     */
-require_once('plugins/gpustat/lib/Main.php');
 
-use gpustat\lib\Main;
+
+/*
+  Create a .page file based on this example file and store the file in your plugin directory
+  Make sure this file has a unique name not used by the GUI or other plugins
+
+  This is an example configuration which is used to add custom tiles to the dashboard
+  Placement of one or more custom tiles is done under column1, column2 or column3
+  A column can have as many new custom tiles as needed, each custom tile is a <tbody> element
+  Each tile must have these two properties set:
+
+  "_(description)_"    - this is the (translated) description shown in the Content Manager window
+  "_(Tile tile)_"      - this is the (translated) title of the tile shown in bold on the screen
+
+  The content of the tile can be any text as required by your plugin, this content is placed inside the <td> element
+  A number of predefined spans are available to make fields of certain widths and maybe used to follow the GUI alignment
+  These are:
+  <span class="w18">
+  <span class="w26">
+  <span class="w36">
+  <span class="w44">
+  <span class="w72">
+*/
+
+$pluginname = "gpustat"; // substitute this entry with the name of your plugin
 
 $gpustat_cfg = parse_plugin_cfg('gpustat', true);
-
+if (!isset($gpustat_cfg["MULTIGPUJSON"])) $gpustat_cfg["MULTIGPUJSON"] = "%7B%22%22%3A%7B%22id%22%3A%22None%22%2C%22model%22%3A%22None%22%2C%22vendor%22%3A%22None%22%2C%22guid%22%3A%22None%22%7D%7D" ;
+$multi = urldecode($gpustat_cfg["MULTIGPUJSON"]) ;
+$multigpus = json_decode($multi,true) ;
 $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
 
 $apps = [
-    'plex', 'jellyfin', 'handbrake', 'emby', 'tdarr', 'unmanic', 'dizquetv',
-    'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
+    'plex', 'jellyfin', 'handbrake', 'emby', 'tdarr', 'unmanic', 'dizquetv', 'ersatztv',
+    'fileflows', 'frigate', 'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
 ];
 
-$gpu_vendor = strtolower(Main::praseGPU($gpustat_cfg["GPU1"])[0]);
+$i= $j =$k = 1;  
+$gpus_selected = count($multigpus) ;
 
-switch ($gpu_vendor) {
+foreach ($multigpus as $id=>$gpu) {
+    $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
+    switch ($gpu['vendor']) {
+        case "nvidia":
+            $gpu_nv = true;
+            break;
+        case "intel":
+            $gpu_intel = true;
+            break;
+        case "amd":
+            $gpu_amd = true;
+            break;
+        default:
+            // If vendor isn't set the config hasn't been saved, don't render the plugin
+            $gpu_unknown = true;
+            $unknown_msg = "No GPUs selected - Select GPU(s) in GPUStat settings page and apply.";
+    }
+
+    if ($gpus_selected > 1) $gpu_tag = $i ; else $gpu_tag = "" ;
+        $stats = "<div class='section'>_(GPU".$gpu_tag." - )_";
+        $stats .= "<span class='gpu{$i}-vendor'></span>&nbsp;<span class='gpu{$i}-name'></span>&nbsp;<span>(<span class='gpu{$i}-passedthrough'></span>)</span>&nbsp;<br>";
+        $stats .= "<i class='fa fa-microchip fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-util'></span>&nbsp;";
+        if ($gpu_nv || $gpu_amd) {
+        if ($gpustat_cfg['DISPTEMP']) $stats .= "<i class='fa fa-thermometer-half fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-temp'></span>&nbsp;&nbsp;&nbsp;" ;
+        $stats .= "<span title='PCIe Gen' class='gpu-stats-primary'><i class='fa fa-cogs fa-1x'></i><span class='gpu{$i}-pciegen'></span><i  id='gpu{$i}-pciegen-arrow' class='fa fa-caret-down fa-1x' style='color:red; display: inline;'></i><span>&nbsp;-&nbsp;</span><span class='gpu{$i}-pciewidth'></span><i  id='gpu{$i}-pciewidth-arrow' class='fa fa-caret-down fa-1x' style='color:red; display: inline;'></i></span>" ;
+        }
+        if ($gpu_nv && $gpustat_cfg['DISPSESSIONS']) $stats .="<span> Processes: <span class='gpu{$i}-sessions'></span></span>";
+    $stats .= "<br><br></div>" ;
+    $layout = GPULayout($i, $gpu["vendor"],$gpustat_cfg) ;
+    $mytiles[$pluginname.$k]['column'.$j] =
+    <<<EOT
+    <tbody id="tblGPUDash$i" title="_(GPU #$i Stats)_">
+    <tr><td><i class='icon-hardware f32'></i>
+    $stats
+    <a href="Dashboard/Settings/GPUStatSettings" title="_(Go to GPU Statistics settings)_"><i class="fa fa-fw fa-cog control"></i></a></td></tr>
+    $layout
+    </tbody>
+    EOT;
+    $multigpus[$id]["panel"] = $i ;
+    $i++ ; #GPU Number
+    $j++ ; #Default Column
+    if ($j >3) { $j=1 ; $k++ ;} #Plugin name in array. Only 3 Dashboards per name.
+}
+
+
+function GPULayout($count,$vendor,$gpustat_cfg) {
+    $apps = [
+    'plex', 'jellyfin', 'handbrake', 'emby', 'tdarr', 'unmanic', 'dizquetv', 'ersatztv',
+    'fileflows', 'frigate', 'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
+];
+$gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
+    switch ($vendor) {
     case "nvidia":
         $gpu_nv = true;
         break;
@@ -53,107 +130,66 @@ switch ($gpu_vendor) {
     default:
         // If vendor isn't set the config hasn't been saved, don't render the plugin
         $gpu_unknown = true;
-        $unknown_msg = "Default GPU set - Change GPU in GPUStat settings page and apply.";
+        $unknown_msg = "No GPUs selected - Select GPU(s) in GPUStat settings page and apply.";
 }
 
-?>
+    //$page_render = '<tr class="updated"><td>' ;
 
+    # No GPU Set 
+
+    if ($gpu_unknown)  $page_render .= "<tr><td><span>_(No GPUs selected - Select GPU(s) in GPUStat settings page and apply.)_</span></td></tr>" ; 
+
+  
+    
+
+    return($page_render) ;    
+}
+
+
+?>
 <style type="text/css">
     @import url("/plugins/gpustat/css/style.css");
 </style>
 
-<table id='db-box1' class='dash_gpustat1' style='display:none;'>
-    <thead sort='953'>
-        <tr class='hidden'>
-            <td></td>
-            <td colspan='3'></td>
-            <td></td>
-        </tr>
-    </thead>
-    <tbody id="target-dash-gpustat1" sort='953' class='sortable'>
-        <tr>
-            <td></td>
-            <td class='next' colspan='3'>
-                <i class='icon-hardware'></i>
-                <div class='section'>GPU1 - <span class='gpu1-vendor'></span>&nbsp;<span class='gpu1-name'></span>&nbsp;<span>(<span class='gpu1-passedthrough'></span>)</span>&nbsp;<br>
-                    <?php if ($gpu_unknown) : printf("\t\t\t\t<span>" . $unknown_msg . "</span></div>");
-                    else : ?>
-                        <div style="display: table; display: -webkit-box; display: -moz-box; display: -ms-flexbox; display: -webkit-flex; display: flex;">
-                            <div title="Load" class="gpu-stats-primary"><span class="fa fa-microchip fa-2x"></span><span class='gpu1-util'></span></div>
-                            <?php if ($gpu_nv || $gpu_amd) : ?>
-                                <?php if ($gpustat_cfg['DISPTEMP']) : ?>
-                                    <div title="Temperature" class="gpu-stats-primary"><span class="fa fa-thermometer-half fa-2x"></span><span class='gpu1-temp'></span></div>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                            <?php if ($gpu_nv) : ?>
-                                <?php if ($gpustat_cfg['DISPSESSIONS']) : ?>
-                                    <div title="Processes" class="gpu-stats-primary"><span class="fa fa-slack fa-2x"></span><span class='gpu1-sessions'></span></div>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                            <?php if ($gpu_nv || $gpu_amd) : ?>
-                                <div title="PCIe Gen" class="gpu-stats-primary"><span id='gpu1-pcie' class="fa fa-cogs fa-2x"></span><span class='gpu1-pciegen'></span><span id='gpu1-pciegen-arrow' class="fa fa-caret-down fa-1x" style='color:red; display: inline;'></span>&nbsp;-&nbsp;<span class='gpu1-pciewidth'></span><span id='gpu1-pciewidth-arrow' class="fa fa-caret-down fa-1x" style='color:red; display: inline;'></span></div>
 
-                            <?php endif; ?>
-                        <?php endif; ?>
-                        </div>
-                </div>
-                <i class='fa fa-fw chevron mt0' id='dash_gpustat_toggle1' onclick='toggleChevron("dash_gpustat_toggle1",0)'></i>
-                <a href='/Settings/GPUStatSettings' id='dash_gpustat_settings' title='Go to GPU Statistics settings'><i class='fa fa-fw fa-cog chevron mt0'></i></a>
-            </td>
-            <td></td>
-        </tr>
-        <?php if ($gpu_unknown) : printf("\t</tbody>\n</table>");
-        else : ?>
-            <tr class="dash_gpustat_toggle1 gpu1-enviro">
-                <td></td>
-            </tr>
-        <?php endif; ?>
-    </tbody>
-</table>
+
 
 <script id="message-template-bars" type="text/template">
-    <tr id="gpu-bars" class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
-            <td></td>
-            <td><span>{{label1}}</span><span class='hidden'> / {{label2}}</span></td>
-            <td><span class='gpu{{gpuNR}}-{{stat1}} load'></span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat1}}bar'></span><span></span></div></td>
-            <td class='hidden'><span class='gpu{{gpuNR}}-{{stat2}} load'></span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat2}}bar'></span><span></span></div></td>
-            <td></td>
-    </tr>
+    <tr><td><span class='w36'><i class='ups fa fa-fw icon-hardware'></i>_({{label1}})_<span class='hidden'>_( / {{label2}})_</span></span>
+    <span class='w26'><span class='gpu{{gpuNR}}-{{stat1}} load'>0%</span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat1}}bar' id='gpu{{gpuNR}}-{{stat1}}bar'></span><span></span></div></span>
+    <span class='w26'><span class='hidden'><span class='gpu{{gpuNR}}-{{stat2}} load'>0%</span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat2}}bar' id='gpu{{gpuNR}}-{{stat2}}bar'></span><span></span></div></span></span>
+    </td></tr>
 </script>
 
 <script id="message-template-simple" type="text/template">
-    <tr id="gpu-labels" class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
-            <td></td>
-            <td><span>{{label1}}: </span><span class='gpu{{gpuNR}}-{{stat1}}'></span></td>
-            <td><span class='hidden'>{{label2}}: <span class='gpu{{gpuNR}}-{{stat2}}'></span></span></td>
-            <td><span class='hidden'>{{label3}}: <span class='gpu{{gpuNR}}-{{stat3}}'></span></span></td>
-            <td></td>
-    </tr>
+<tr><td colspan ='3' id="gpu-labels" >
+    <span class='w36'><i class='ups fa fa-fw icon-hardware'></i>_({{label1}})_: <span class='gpu{{gpuNR}}-{{stat1}}'></span></span>
+    <span class='w26'><span class='hidden'><i class='ups fa fa-fw icon-hardware'></i>_({{label2}})_: <span class='gpu{{gpuNR}}-{{stat2}}'></span></span></span>
+    <span class='w18'><span class='hidden'><i class='ups fa fa-fw icon-hardware'></i>_({{label3}})_: <span class='gpu{{gpuNR}}-{{stat3}}'></span></span></span>
+    </td></tr>
 </script>
 
 <script id="message-template-sessions" type="text/template">
-    <tr id="gpu-processes" class="dash_gpustat_toggle{{gpuNR}} gpu{{gpuNR}}-enviro">
-            <td></td>
-            <td>Active Apps</td>
-            <td colspan="2">
-<?php foreach ($apps as $app) : ?>
-                <span id="gpu{{gpuNR}}-img-span-<?= $app; ?>" class='hidden gpu{{gpuNR}}-img-span-<?= $app; ?>'>
-                    <img id='gpu{{gpuNR}}-<?= $app; ?>' class='gpu-image' src="/plugins/gpustat/images/<?= $app; ?>.png">
-                </span>
-<?php endforeach; ?>
-            </td>
-            <td></td>
-        </tr>
+            <tr><td colspan ='2' ><span class='w36'><i class='ups fa fa-fw icon-hardware'></i>_(Active Apps)_</span>
+                foreach($apps as $app) {
+                    <span id='w16 gpu{{gpuNR}}-img-span-$app' class='hidden gpu{{gpuNR}}-img-span-$app'>
+                    <img id='gpu{{gpuNR}}-$app' class='gpu-image' src='/plugins/gpustat/images/$app.png'>
+                    </span>
+                }
+            </td></tr>
 </script>
 
 <script type="text/javascript" src="/plugins/gpustat/scripts/gpustat.js"></script>
-<?php if (($gpu_unknown = false) || ($gpustat_cfg['GPU1'] != "")) : ?>
-    <script type="text/javascript">
-        $(gpustat_status_gpu1);
-        if (<?= $gpustat_cfg['UIREFRESH']; ?>) {
-            setInterval(gpustat_status_gpu1, <?= max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']); ?>);
-        }
-        $(gpustat_dash(1));
-        $(gpustat_dash_build(1));
-    </script>
-<?php endif; ?>
+<script type="text/javascript">
+
+function refresh() {
+    $(gpustat_status(<?=json_encode($multigpus);?>));
+}
+
+    $(gpustat_dash_build(<?=json_encode($multigpus);?>));
+    $(gpustat_status(<?=json_encode($multigpus);?>));
+    var json = <?=json_encode($multigpus);?> ;
+    if (<?=$gpustat_cfg['UIREFRESH'];?>) {
+        setInterval(refresh, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']);?>);
+    }
+</script>

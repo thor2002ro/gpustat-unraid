@@ -1,41 +1,31 @@
-
-const gpustat_status_gpu1 = () => {
-    gpustat_status(1);
-};
-
-const gpustat_status_gpu2 = () => {
-    gpustat_status(2);
-};
-
-const gpustat_status_gpu3 = () => {
-    gpustat_status(3);
-};
-
-const gpustat_status = function (_args) {
-    $.getJSON("/plugins/gpustat/gpustatus.php?argv=" + _args, (data) => {
-        if (data) {
+const gpustat_status = (_args) => {
+    $.getJSON('/plugins/gpustat/gpustatus.php?gpus='+JSON.stringify(_args), (data2) => {
+        if (data2) {
+            $.each(data2, function (key2, data) {
+                 panel = data["panel"] ;
+                 //console.log(data);
             switch (data["vendor"].toLowerCase()) {
                 case "nvidia":
                     // Nvidia Slider Bars
-                    /*$('.gpu'+_args+'-memclockbar').removeAttr('style').css('width', data["memclock"] / data["memclockmax"] * 100 + "%");
-                    $('.gpu'+_args+'-gpuclockbar').removeAttr('style').css('width', data["clock"] / data["clockmax"] * 100 + "%");
-                    $('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"].replace("W","") / data["powermax"] * 100) + "%");
-                    $('.gpu'+_args+'-rxutilbar').removeAttr('style').css('width', parseInt(data["rxutil"] / data["pciemax"] * 100) + "%");
-                    $('.gpu'+_args+'-txutilbar').removeAttr('style').css('width', parseInt(data["txutil"] / data["pciemax"] * 100) + "%");
+                    /*$('.gpu'+panel+'-memclockbar').removeAttr('style').css('width', data["memclock"] / data["memclockmax"] * 100 + "%");
+                    $('.gpu'+panel+'-gpuclockbar').removeAttr('style').css('width', data["clock"] / data["clockmax"] * 100 + "%");
+                    $('.gpu'+panel+'-powerbar').removeAttr('style').css('width', parseInt(data["power"].replace("W","") / data["powermax"] * 100) + "%");
+                    $('.gpu'+panel+'-rxutilbar').removeAttr('style').css('width', parseInt(data["rxutil"] / data["pciemax"] * 100) + "%");
+                    $('.gpu'+panel+'-txutilbar').removeAttr('style').css('width', parseInt(data["txutil"] / data["pciemax"] * 100) + "%");
 
                      let nvidiabars = ['util', 'memutil', 'encutil', 'decutil', 'fan'];
                     nvidiabars.forEach(function (metric) {
-                        $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
+                        $('.gpu'+panel+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                     }); */
 
                     if (data["appssupp"]) {
                         data["appssupp"].forEach(function (app) {
                             if (data["processes"][app + "using"]) {
-                                $('.gpu' + _args + '-img-span-' + app).css('display', "table-cell");
-                                $('#gpu' + _args + "-" + app).attr('title', "Count: " + data["processes"][app + "count"] + "\n" +"Memory: " + data["processes"][app + "mem"] + "MB");
+                                $('.gpu' + panel + '-img-span-' + app).css('display', "table-cell");
+                                $('#gpu' + panel + "-" + app).attr('title', "Count: " + data["processes"][app + "count"] + "\n" +"Memory: " + data["processes"][app + "mem"] + "MB");
                             } else {
-                                $('.gpu' + _args + '-img-span-' + app).css('display', "none");
-                                $('#gpu' + _args + "-" + app).attr('title', "");
+                                $('.gpu' + panel + '-img-span-' + app).css('display', "none");
+                                $('#gpu' + panel + "-" + app).attr('title', "");
                             }
                         });
                     }
@@ -44,12 +34,12 @@ const gpustat_status = function (_args) {
                     // Intel Slider Bars
                     /*  let intelbars = ['3drender', 'blitter', 'video', 'videnh', 'powerutil'];
                      intelbars.forEach(function (metric) {
-                         $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
+                         $('.gpu'+panel+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                      }); */
                     break;
                 case "amd":
-                    /*  $('.gpu'+_args+'-powerbar').removeAttr('style').css('width', parseInt(data["power"] / data["powermax"] * 100) + "%");
-                        $('.gpu'+_args+'-fanbar').removeAttr('style').css('width', parseInt(data["fan"] / data["fanmax"] * 100) + "%");
+                    /*  $('.gpu'+panel+'-powerbar').removeAttr('style').css('width', parseInt(data["power"] / data["powermax"] * 100) + "%");
+                        $('.gpu'+panel+'-fanbar').removeAttr('style').css('width', parseInt(data["fan"] / data["fanmax"] * 100) + "%");
                          let amdbars = [
                             'util', 'event', 'vertex',
                             'texture', 'shaderexp', 'sequencer',
@@ -58,7 +48,7 @@ const gpustat_status = function (_args) {
                             'gfxtrans', 'memclockutil', 'clockutil'
                         ];
                         amdbars.forEach(function (metric) {
-                            $('.gpu'+_args+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
+                            $('.gpu'+panel+'-'+metric+'bar').removeAttr('style').css('width', data[metric]);
                         });      */
                     break;
             }
@@ -82,60 +72,53 @@ const gpustat_status = function (_args) {
                 }
                 var unitV = data[key + "unit"] || "";
 
-                /* console.log("key " + key);
+                /*
+                console.log("key " + key);
                 console.log("dataV " + dataV);
                 console.log("$(dataV).length " + isNaN(dataV));
                 console.log("dataVmax " + dataVmax);
                 console.log("$(dataVmax).length " + isNaN(dataVmax));
                 console.log("extraV " + extraV);
                 console.log("unitV " + unitV);
-                console.log("\n"); */
+                */
 
-                if (!$('.gpu' + _args + '-' + key).parent().hasClass('gpu-stats-primary') && !isNaN(dataV) && !isNaN(dataVmax)) {
+                if (!$('.gpu' + panel + '-' + key).parent().hasClass('gpu-stats-primary') && !isNaN(dataV) && !isNaN(dataVmax)) {
                     var _value = data[key + 'util'] || parseFloat(dataV / dataVmax * 100).toFixed(2) + "%";
-                    $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', _value);
-                    $('.gpu' + _args + '-' + key).parent().attr('title', (_value + ' - ' + value + ' / ' + dataVmax + ' ' + unitV + extraV));
-                } else if (!($('.gpu' + _args + '-' + key).parent().hasClass('gpu-stats-primary'))) {
-                    $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', value);
-                    $('.gpu' + _args + '-' + key).parent().attr('title', (value + ' ' + unitV + extraV));
+                    $('.gpu' + panel + '-' + key + 'bar').removeAttr('style').css('width', _value);
+                    $('.gpu' + panel + '-' + key).parent().attr('title', (_value + ' - ' + value + ' / ' + dataVmax + ' ' + unitV + extraV));
+                } else if (!($('.gpu' + panel + '-' + key).parent().hasClass('gpu-stats-primary'))) {
+                    $('.gpu' + panel + '-' + key + 'bar').removeAttr('style').css('width', value);
+                    $('.gpu' + panel + '-' + key).parent().attr('title', (value + ' ' + unitV + extraV));
                 } else {
-                    $('.gpu' + _args + '-' + key + 'bar').removeAttr('style').css('width', value);
+                    $('.gpu' + panel + '-' + key + 'bar').removeAttr('style').css('width', value);
                 }
 
-                if ($('.gpu' + _args + '-' + key).parents().is('#gpu-labels')) {
+                if ($('.gpu' + panel + '-' + key).parents().is('#gpu-labels')) {
                     if (key === "throttled") {
-                        $('.gpu' + _args + '-' + key).html(value + data["thrtlrsn"]); //add throttled reason to throttled
-                        $('.gpu' + _args + '-' + key).parent().attr('title', (keyMap[key] + ": " +value + "\n" + keyMap["thrtlrsn"] + ": " + data["thrtlrsn"])); //special tooltip for throttled
+                        $('.gpu' + panel + '-' + key).html(value + data["thrtlrsn"]); //add throttled reason to throttled
+                        $('.gpu' + panel + '-' + key).parent().attr('title', (keyMap[key] + ": " +value + "\n" + keyMap["thrtlrsn"] + ": " + data["thrtlrsn"])); //special tooltip for throttled
                     } else {
-                        $('.gpu' + _args + '-' + key).html(value + " " + unitV); //add unit to simple labels
+                        $('.gpu' + panel + '-' + key).html(value + " " + unitV); //add unit to simple labels
                     }
                 } else {
-                    $('.gpu' + _args + '-' + key).html(value);
+                    $('.gpu' + panel + '-' + key).html(value);
                 }
             });
 
-            change_visibility('#gpu' + _args + '-' + 'pciegen-arrow', data["pcie_downspeed"]);
-            change_visibility('#gpu' + _args + '-' + 'pciewidth-arrow', data["pcie_downwidth"]);
-            change_color('.gpu' + _args + '-' + 'util', data["util"], 80, 'red');
-            change_color('.gpu' + _args + '-' + 'temp', data["temp"], data["tempmax"] - 15, 'red');
-            change_color('#gpu' + _args + '-' + 'pcie', data["bridge_bus"], 0, 'brown');
-            change_tooltip($('#gpu' + _args + '-' + 'pcie').parent(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:' + data["bridge_bus"] + ')');
-            change_color_string('.gpu' + _args + '-' + 'passedthrough', data["passedthrough"], "Passthrough");
+            change_visibility('#gpu' + panel + '-' + 'pciegen-arrow', data["pcie_downspeed"]);
+            change_visibility('#gpu' + panel + '-' + 'pciewidth-arrow', data["pcie_downwidth"]);
+            change_color('.gpu' + panel + '-' + 'util', data["util"], 80, 'red');
+            change_color('.gpu' + panel + '-' + 'temp', data["temp"], data["tempmax"] - 15, 'red');
+            change_color('#gpu' + panel + '-' + 'pcie', data["bridge_bus"], 0, 'brown');
+            change_tooltip($('#gpu' + panel + '-' + 'pcie').parent(), data["bridge_bus"], 0, 'PCIe Gen(Bridge Chip bus:' + data["bridge_bus"] + ')');
+            change_color_string('.gpu' + panel + '-' + 'passedthrough', data["passedthrough"], "Passthrough");
 
-        }
-    });
+        
+    })
+}
+});
 };
 
-const gpustat_dash = function (_args) {
-    // append data from the table into the correct one
-    $("#db-box1").append($(".dash_gpustat" + _args).html());
-
-    // reload toggle to get the correct state
-    toggleView("dash_gpustat_toggle" + _args, true);
-
-    // reload sorting to get the stored data (cookie)
-    sortTable($("#db-box1"), $.cookie("db-box1"));
-};
 
 var keyMap = {
     //common
@@ -210,17 +193,21 @@ var keyOrder = [
     "thrtlrsn", "sessions",
 ];
 
-const gpustat_dash_build = function (_args) {
+const gpustat_dash_build = (_args) => {
     let gpu_data = [];
     let gpu_data_nobars = [];
     let gpu_data_bars = [];
     let disabled_array = [];
     let missing_array = [];
+    let target = "tblGPUDash";
 
-    $.getJSON("/plugins/gpustat/gpustatus.php?argv=" + _args, (data) => {
-        if (data) {
-            $.each(data, function (key, value) {
-                if (
+    $.getJSON('/plugins/gpustat/gpustatus.php?gpus='+JSON.stringify(_args), (data2) => {
+        if (data2) {
+            $.each(data2, function (key2, data) {
+                 panel = data["panel"] ;
+                 //console.log(data);
+                 $.each(data, function (key, value) {
+                if (value !== null && (
                     !(
                         value.toString().includes("N/A") ||
                         key.includes("max") ||
@@ -237,26 +224,32 @@ const gpustat_dash_build = function (_args) {
                         key.includes("processes") ||
                         key.includes("uuid") ||
                         key.includes("sessions") ||
-                        key.includes("thrtlrsn")
+                        key.includes("thrtlrsn") ||
+                        key.includes("panel")
                     ) ||
                     ((key === "rxutil" ||
                         key === "txutil" ||
                         key === "encutil" ||
                         key === "decutil") &&
                         !value.toString().includes("N/A"))
-                ) {
+                )) {
 
-                    /* console.log(key);
+                    /* 
+                    console.log(key);
                     console.log(data[key]);
                     console.log(data[key + 'max']);
-                    console.log($(data[key + 'max']).length); */
+                    console.log($(data[key + 'max']).length); 
+                    */
 
-                    gpu_data.push(key);
+                    // Check if the key is not already present in the arrays
+                    if (gpu_data.indexOf(key) === -1) gpu_data.push(key);
                     if (!(($(data[key + 'max']).length > 0) || (value.toString().includes('%')))) {
-                        gpu_data_nobars.push(key);
+                        // Check if the key is not already present in the arrays
+                        if (gpu_data_nobars.indexOf(key) === -1) gpu_data_nobars.push(key);
                     }
                 }
-            });
+            })
+        
 
             // returns missing keys present in keyOrder but not in gpu_data
             disabled_array = keyOrder.filter(function (obj) { return gpu_data.indexOf(obj) == -1; });
@@ -267,18 +260,20 @@ const gpustat_dash_build = function (_args) {
             gpu_data = gpu_data.filter(function (obj) { return gpu_data_nobars.indexOf(obj) < 0; });
 
 
-            /* console.log(data["name"]);
+            /* 
+            console.log(data["name"]);
             console.log(data);
             console.log(gpu_data);
             console.log(disabled_array);
             console.log(missing_array);
             console.log(gpu_data_nobars);
-            console.log(gpu_data_bars); */
+            console.log(gpu_data_bars); 
+            */
 
             for (var i = 0; i < gpu_data.length; i += 2) {
                 var $clone = $('#message-template-bars').html();
                 $clone = $clone
-                    .replaceAll("{{gpuNR}}", _args)
+                    .replaceAll("{{gpuNR}}", panel)
                     .replaceAll("{{label1}}", keyMap[gpu_data[i]] || gpu_data[i])
                     .replaceAll("{{label2}}", keyMap[gpu_data[i + 1]] || gpu_data[i + 1])
                     .replaceAll("{{stat1}}", gpu_data[i])
@@ -288,12 +283,12 @@ const gpustat_dash_build = function (_args) {
                     $clone = $clone.replaceAll("'hidden'", "");
                 }
                 // etc
-                $("#target-dash-gpustat" + _args).append($clone);
+                $("#" + target + panel).append($clone);
             }
             for (var i = 0; i < gpu_data_nobars.length; i += 3) {
                 var $clone = $('#message-template-simple').html();
                 $clone = $clone
-                    .replaceAll("{{gpuNR}}", _args)
+                    .replaceAll("{{gpuNR}}", panel)
                     .replaceAll("{{label1}}", keyMap[gpu_data_nobars[i]] || gpu_data_nobars[i])
                     .replaceAll("{{label2}}", keyMap[gpu_data_nobars[i + 1]] || gpu_data_nobars[i + 1])
                     .replaceAll("{{label3}}", keyMap[gpu_data_nobars[i + 2]] || gpu_data_nobars[i + 2])
@@ -308,15 +303,16 @@ const gpustat_dash_build = function (_args) {
                     $clone = $clone.replace("'hidden'", "");
                 }
                 // etc
-                $("#target-dash-gpustat" + _args).append($clone);
+                $("#" + target + panel).append($clone);
             }
 
             if (data["vendor"].toLowerCase() === "nvidia") {
                 var $clone = $('#message-template-sessions').html();
-                $clone = $clone.replaceAll("{{gpuNR}}", _args)
+                $clone = $clone.replaceAll("{{gpuNR}}", panel)
                 // etc
-                $("#target-dash-gpustat" + _args).append($clone);
+                $("#" + target + panel).append($clone);
             }
+        })
         }
     });
 

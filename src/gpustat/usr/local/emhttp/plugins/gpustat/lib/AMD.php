@@ -1,5 +1,29 @@
 <?php
 
+/*
+  MIT License
+
+  Copyright (c) 2020-2022 b3rs3rk
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+
 namespace gpustat\lib;
 
 /**
@@ -9,10 +33,10 @@ namespace gpustat\lib;
 class AMD extends Main
 {
     const CMD_UTILITY = 'radeontop';
-    const LSPCI = 'lspci';
-    const INVENTORY_PARAM = '| grep VGA';
+    const INVENTORY_UTILITY = 'lspci';
+    const INVENTORY_PARAM = ' -mm | grep VGA';
     const INVENTORY_REGEX =
-    '/^(?P<busid>[0-9a-f]{2}).*\[AMD(\/ATI)?\]\s+(?P<model>.+)\s+(?:\[(?P<product>.+)\]|\()/imU';
+        '/^(?P<id>(?P<busid>[0-9a-f]{2}):[0-9a-f]{2}\.[0-9a-f])\s+\"(?P<device>.+)\"\s+\"(?P<vendor>.+)\"\s+\"(?P<model>.+)\"\s+(?:-\w+\s+){2}(?:\"(?P<manufacturer>.+)\"\s+\"(?P<product>.+)\"|())/imU';
 
     const STATISTICS_PARAM = '-d - -l 1';
     const STATISTICS_KEYMAP = [
@@ -36,6 +60,7 @@ class AMD extends Main
     const TEMP_UTILITY = 'sensors';
     const TEMP_PARAM = '-j 2>errors';
 
+    const LSPCI = 'lspci';
     const LSPCI_REGEX =
     '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.*),\s[Width]*\s(?P<pcie_widthmax>.*),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.*)(\s(?P<pcie_downspeed>.*))?,\s[Width]*\s(?P<pcie_width>.*)(\s(?P<pcie_downwidth>.*))?\n.+Kernel driver in use:\s(?P<driver>.*)$/imU';
 
@@ -61,19 +86,20 @@ class AMD extends Main
         $result = [];
 
         if ($this->cmdexists) {
-            $this->checkCommand(self::LSPCI, false);
+            $this->checkCommand(self::INVENTORY_UTILITY, false);
             if ($this->cmdexists) {
-                $this->runCommand(self::LSPCI, self::INVENTORY_PARAM, false);
+                $this->runCommand(self::INVENTORY_UTILITY, self::INVENTORY_PARAM, false);
                 if (!empty($this->stdout) && strlen($this->stdout) > 0) {
                     $this->inventory = $this->parseInventory(self::INVENTORY_REGEX);
                 }
                 if (!empty($this->inventory)) {
-                    foreach ($this->inventory as $gpu) {
-                        $result[] = [
-                            'vendor'        => 'AMD',
-                            'id'            => $gpu['busid'],
-                            'model'         => (string) ($gpu['product'] ?? $gpu['model']),
-                            'guid'          => $gpu['busid'],
+                    foreach ($this->inventory AS $gpu) {
+                        if ($gpu['vendor'] != "Advanced Micro Devices, Inc. [AMD/ATI]") continue ;
+                        $result[$gpu['id']] = [
+                            'id'    => $gpu['id'],
+                            'vendor' => 'amd',
+                            'model' => (string) ($gpu['product'] ?? $gpu['model']),
+                            'guid'  => $gpu['busid'],
                             'bridge_chip'   => ($this->getpciebridge($gpu['busid']))['bridge_chip'],
                         ];
                     }
@@ -81,8 +107,8 @@ class AMD extends Main
             }
         }
         if ($this->settings['UIDEBUG']) {
-            $inventory[] = [
-                'vendor'        => 'AMD',
+            $inventory["FAKE"] = [
+                'vendor'        => 'amd',
                 'id'            => "FAKE",
                 'model'         => 'Radeon RX 6800/6800 XT / 6900 XT',
                 'guid'          => 'FAKE',
@@ -96,38 +122,39 @@ class AMD extends Main
 
     /**
      * Retrieves AMD APU/GPU statistics
-     *
-     * $this->settings['GPUID']
      */
-    public function getStatistics(string $gpu)
+    public function getStatistics(array $gpu)
     {
-        if ($this->praseGPU($gpu)[2] === "FAKE") {
-            $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
-        } else if (($this->getpciedata($gpu)["passedthrough"] === "Normal") && ($this->cmdexists)) {
-            //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
-            $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $this->praseGPU($gpu)[2]);
-            $this->runCommand($command, self::STATISTICS_PARAM, false);
-        }
 
-        if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-            $this->parseStatistics($gpu);
-        } else {
-            $this->pageData['error'] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
-        }
+            if ($gpu['id'] === "FAKE") {
+                $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
+            } else if ($this->cmdexists) {
+            //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
+            $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $gpu['id']);
+            $this->runCommand($command, self::STATISTICS_PARAM, false);
+            }
+            if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+                $this->parseStatistics($gpu);
+            } else {
+                $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            }
+            return json_encode($this->pageData) ;
+        
     }
 
-    /**
+     /**
      * Retrieves AMD APU/GPU Temperature/Fan/Power/Voltage readings from lm-sensors
      * @returns array
      */
     private function getSensorData(string $gpubus): array
     {
         $sensors = [];
-        $chip = sprintf('amdgpu-pci-%1s00', $gpubus);
 
         if ($gpubus === "FAKE") {
             $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-sensors-stdout.txt');
         } else {
+            $chip = sprintf('amdgpu-pci-%1s00', $gpubus);
+
             $this->checkCommand(self::TEMP_UTILITY, false);
             if ($this->cmdexists) {
                 $tempFormat = '';
@@ -180,31 +207,31 @@ class AMD extends Main
         return $sensors;
     }
 
-    /**
+        /**
      * Retrieves pcie and driver from lspci and returns an array
      *
      * @return array
      */
-    public function getpciedata(string $gpu): array
+    public function getpciedata($gpu): array
     {
         $result = [];
         $bridge = [];
-        $gpubus = $this->praseGPU($gpu)[2];
-        $bridgebus = $this->praseGPU($gpu)[3]; //$this->getpciebridge($this->praseGPU($gpu)[3])['bridge_chip'];
+        $gpubus = $gpu['guid'];
+        $bridgebus = $gpu['bridge_chip']; //$this->getpciebridge($this->praseGPU($gpu)[3])['bridge_chip'];
 
         if ($gpubus === "FAKE") {
             $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-lspci-stdout.txt');
             $this->lspci_gpu = $this->parseInventory(self::LSPCI_REGEX);
         } else if ($this->cmdexists) {
-            $this->checkCommand(self::LSPCI, false);
+            $this->checkCommand(self::INVENTORY_UTILITY, false);
             $param = sprintf(' -vv -s %s: -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"', $gpubus);
-            $this->runCommand(self::LSPCI, $param, false);
+            $this->runCommand(self::INVENTORY_UTILITY, $param, false);
             if (!empty($this->stdout) && strlen($this->stdout) > 0) {
                 $this->lspci_gpu = $this->parseInventory(self::LSPCI_REGEX);
             }
             if (($bridgebus != NULL) || ($bridgebus != '')) {
                 $param = sprintf(' -vv -s %s: -s .0 | grep -P "LnkSta:|LnkCap:|Kernel driver in use"', $bridgebus);
-                $this->runCommand(self::LSPCI, $param, false);
+                $this->runCommand(self::INVENTORY_UTILITY, $param, false);
                 if (!empty($this->stdout) && strlen($this->stdout) > 0) {
                     $this->lspci_bridge = $this->parseInventory(self::LSPCI_REGEX);
                 }
@@ -240,7 +267,6 @@ class AMD extends Main
         }
         return $result;
     }
-
     public function getpciebridge(string $gpubus): array
     {
         $result = [];
@@ -269,11 +295,11 @@ class AMD extends Main
     /**
      * Loads radeontop STDOUT and parses into an associative array for mapping to plugin variables
      */
-    private function parseStatistics(string $gpu)
+    private function parseStatistics($gpu)
     {
         $this->pageData += [
-            'vendor'        => $this->praseGPU($gpu)[0],
-            'name'          => $this->praseGPU($gpu)[1],
+            'vendor'        => 'AMD',
+            'name'          => $gpu['model'],
             'event'         => 'N/A',
             'vertex'        => 'N/A',
             'texture'       => 'N/A',
@@ -306,7 +332,6 @@ class AMD extends Main
                 $fields = explode(" ", $metric);
                 if (isset(self::STATISTICS_KEYMAP[$fields[0]])) {
                     $values = self::STATISTICS_KEYMAP[$fields[0]];
-                    //echo $fields[0] . " " . $values[0] . ": " . $fields[1] . " " . $values[1] . ": " . $fields[2] . " " . $values[2] . ": " . $fields[3] . "\n";
 
                     if ($this->settings['DISP' . strtoupper($values[0])] || $this->settings['DISP' . strtoupper($values[2])]) {
                         $fields[1] = str_replace(PHP_EOL, '', $fields[1]);
@@ -340,10 +365,7 @@ class AMD extends Main
             $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_ENOUGH, "Count: $count");
         }
 
-        $this->pageData = array_merge($this->pageData, $this->getSensorData($this->praseGPU($gpu)[2]));
-
-        $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));
-
-        $this->echoJson();
+        $this->pageData = array_merge($this->pageData, $this->getSensorData($gpu['guid']));
+        $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));    
     }
 }
