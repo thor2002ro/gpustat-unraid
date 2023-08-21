@@ -1,29 +1,5 @@
 <?php
 
-/*
-  MIT License
-
-  Copyright (c) 2020-2022 b3rs3rk
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-*/
-
 namespace gpustat\lib;
 
 /**
@@ -107,11 +83,11 @@ class AMD extends Main
             }
         }
         if ($this->settings['UIDEBUG']) {
-            $inventory["FAKE"] = [
+            $inventory["FAKE_amd"] = [
                 'vendor'        => 'amd',
-                'id'            => "FAKE",
+                'id'            => "FAKE_amd",
                 'model'         => 'Radeon RX 6800/6800 XT / 6900 XT',
-                'guid'          => 'FAKE',
+                'guid'          => 'FAKE_amd',
                 'bridge_chip'   => NULL,
             ];
             $result = array_merge($result, $inventory);
@@ -126,7 +102,7 @@ class AMD extends Main
     public function getStatistics(array $gpu)
     {
 
-            if ($gpu['id'] === "FAKE") {
+            if ($gpu['id'] === "FAKE_amd") {
                 $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
             } else if ($this->cmdexists) {
             //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
@@ -150,7 +126,7 @@ class AMD extends Main
     {
         $sensors = [];
 
-        if ($gpubus === "FAKE") {
+        if ($gpubus === "FAKE_amd") {
             $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-sensors-stdout.txt');
         } else {
             $chip = sprintf('amdgpu-pci-%1s00', $gpubus);
@@ -219,7 +195,7 @@ class AMD extends Main
         $gpubus = $gpu['guid'];
         $bridgebus = $gpu['bridge_chip']; //$this->getpciebridge($this->praseGPU($gpu)[3])['bridge_chip'];
 
-        if ($gpubus === "FAKE") {
+        if ($gpubus === "FAKE_amd") {
             $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-lspci-stdout.txt');
             $this->lspci_gpu = $this->parseInventory(self::LSPCI_REGEX);
         } else if ($this->cmdexists) {
@@ -366,6 +342,7 @@ class AMD extends Main
         }
 
         $this->pageData = array_merge($this->pageData, $this->getSensorData($gpu['guid']));
-        $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));    
+        $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));   
+         
     }
 }

@@ -70,13 +70,13 @@ $array=json_decode($_GET['gpus'],true) ;
             $data[$gpu["id"]] = $decode;
             break;
         case 'intel':
-            $return=(new Intel($gpustat_cfg))->getStatistics();
+            $return=(new Intel($gpustat_cfg))->getStatistics($gpu);
             $decode = json_decode($return,true);
             $decode["panel"] = $gpu['panel'] ;
             $data[$gpu["id"]] = $decode;
             break;
         case 'nvidia':
-            $return = (new Nvidia($gpustat_cfg))->getStatistics() ;
+            $return = (new Nvidia($gpustat_cfg))->getStatistics($gpu) ;
             $decode = json_decode($return,true);
             $decode["panel"] = $gpu['panel'] ;
             $data[$gpu["id"]] = $decode;

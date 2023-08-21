@@ -1,29 +1,5 @@
 <?php
 
-/*
-  MIT License
-
-  Copyright (c) 2020-2022 b3rs3rk
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.
-*/
-
 namespace gpustat\lib;
 
 use JsonException;
@@ -38,7 +14,8 @@ class Intel extends Main
     const INVENTORY_UTILITY = 'lspci';
     const INVENTORY_PARAM = " -Dmm | grep -E 'Display|VGA' ";
     const INVENTORY_REGEX =
-        '/VGA.+:\s+Intel\s+Corporation\s+(?P<model>.*)\s+(\[|Family|Integrated|Graphics|Controller|Series|\()/iU';
+        '/^(?P<id>(?P<busid>[0-9a-f]{2}):[0-9a-f]{2}\.[0-9a-f])\s+\"(?P<device>.+)\"\s+\"(?P<vendor>.+)\"\s+\"(?P<model>.+)\"\s+(?:-\w+\s+){2}(?:\"(?P<manufacturer>.+)\"\s+\"(?P<product>.+)\"|())/imU';
+
     const STATISTICS_PARAM = '-J -s 250 -d pci:slot="';
     const STATISTICS_WRAPPER = 'timeout -k .500 .600';
 
@@ -66,49 +43,61 @@ class Intel extends Main
             if ($this->cmdexists) {
                 $this->runCommand(self::INVENTORY_UTILITY, self::INVENTORY_PARAM, false);
                 if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                    foreach(explode(PHP_EOL,$this->stdout) AS $vga) {
-                        preg_match_all('/"([^"]*)"|(\S+)/', $vga, $matches);
-                        $id = str_replace('"', '', $matches[0][0]) ;
-                        $vendor = str_replace('"', '',$matches[0][2]) ;
-                        $model = str_replace('"', '',$matches[0][3]) ;
+                    $this->parseInventory(self::INVENTORY_REGEX);
+                }
+                if (!empty($this->inventory)) {
+                    foreach ($this->inventory as $gpu) {
                         if ($vendor != "Intel Corporation") continue ;
-                        $result[$id] = [
-                            'id' => substr($id,5) ,
-                            'model' => $model,
-                            'vendor' => 'intel',
-                            'guid' => $id
+                        $result[$gpu['id']] = [
+                            'vendor'        => 'Intel',
+                            'id'            => $gpu['id'],
+                            'model'         => (string) $gpu['model'],
+                            'guid'          => $gpu['busid'],
+                            'bridge_chip'   => NULL,
                         ];
-
-                     }
-                 }
+                    }
+                }
             }
         }
+        if ($this->settings['UIDEBUG']) {
+            $inventory["FAKE_intel"] = [
+                'vendor'        => 'intel',
+                'id'            => "FAKE_intel",
+                'model'         => 'Xeon E3-1200 v2/3rd Gen Core processor',
+                'guid'          => 'FAKE_intel',
+                'bridge_chip'   => NULL,
+            ];
+            $result = array_merge($result, $inventory);
+        }
+        
         return $result;
     }
 
     /**
      * Retrieves Intel iGPU statistics
      */
-    public function getStatistics()
+    public function getStatistics($gpu)
     {
-        if ($this->cmdexists) {
+        if ($gpu['id'] === "FAKE_intel") {
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/intel-gpu-top-stdout.txt');
+        } else if ($this->cmdexists) {
             //Command invokes intel_gpu_top in JSON output mode with an update rate of 5 seconds
             $command = self::STATISTICS_WRAPPER . ES . self::CMD_UTILITY;
-                        //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
-            $this->runCommand($command, self::STATISTICS_PARAM. $this->settings['GPUID'].'"', false);
-            if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                $this->parseStatistics();
-            } else {
-                $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
-            }
-            return json_encode($this->pageData) ;
+            $this->runCommand($command, self::STATISTICS_PARAM. $gpu['id'].'"', false);
         }
+        if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+            $this->parseStatistics($gpu);
+        } else {
+            $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+        }
+        return json_encode($this->pageData) ;
+        
     }
 
     /**
      * Loads JSON into array then retrieves and returns specific definitions in an array
      */
-    private function parseStatistics()
+    private function parseStatistics($gpu)
     {
         // JSON output from intel_gpu_top with multiple array indexes isn't properly formatted
         $stdout = "[" . str_replace('}{', '},{', str_replace(["\n","\t"], '', $this->stdout)) . "]";
@@ -134,70 +123,75 @@ class Intel extends Main
 
             $this->pageData += [
                 'vendor'        => 'Intel',
-                'name'          => 'iGPU/GPU',
-                '3drender'      => 'N/A',
+                'name'          => $gpu['model'],
                 'blitter'       => 'N/A',
                 'interrupts'    => 'N/A',
                 'powerutil'     => 'N/A',
                 'video'         => 'N/A',
                 'videnh'        => 'N/A',
             ];
-            $gpus = $this->getInventory() ;
-            if ($gpus) {
-                if (isset($gpus[$this->settings['GPUID']])) {
-                    $this->pageData['name'] = $gpus[$this->settings['GPUID']]["model"] ;
-                }
-            }
+
+            $this->pageData += [
+                'powerunit'     => 'W',
+                'fanunit'       => 'RPM',
+                'voltageunit'   => 'V',
+                'tempunit'      => $this->settings['TEMPFORMAT'],
+            ];
+
             if ($this->settings['DISP3DRENDER']) {
                 if (isset($data['engines']['Render/3D/0']['busy'])) {
-                    $this->pageData['util'] = $this->pageData['3drender'] = $this->roundFloat($data['engines']['Render/3D/0']['busy']) . '%';
+                    $this->pageData['util'] /*= $this->pageData['3drender']*/ = $this->roundFloat($data['engines']['Render/3D/0']['busy'], 1) . $data['engines']['Render/3D/0']['unit'];
                 }
             }
             if ($this->settings['DISPBLITTER']) {
                 if (isset($data['engines']['Blitter/0']['busy'])) {
-                    $this->pageData['blitter'] = $this->roundFloat($data['engines']['Blitter/0']['busy']) . '%';
+                    $this->pageData['blitter'] = $this->roundFloat($data['engines']['Blitter/0']['busy']) . $data['engines']['Blitter/0']['unit'];
                 }
             }
             if ($this->settings['DISPVIDEO']) {
                 if (isset($data['engines']['Video/0']['busy'])) {
-                    $this->pageData['video'] = $this->roundFloat($data['engines']['Video/0']['busy']) . '%';
+                    $this->pageData['video'] = $this->roundFloat($data['engines']['Video/0']['busy']) . $data['engines']['Video/0']['unit'];
                 }
             }
             if ($this->settings['DISPVIDENH']) {
                 if (isset($data['engines']['VideoEnhance/0']['busy'])) {
-                    $this->pageData['videnh'] = $this->roundFloat($data['engines']['VideoEnhance/0']['busy']) . '%';
+                    $this->pageData['videnh'] = $this->roundFloat($data['engines']['VideoEnhance/0']['busy']) . $data['engines']['VideoEnhance/0']['unit'];
                 }
             }
             if ($this->settings['DISPPCIUTIL']) {
                 if (isset($data['imc-bandwidth']['reads'], $data['imc-bandwidth']['writes'])) {
-                    $this->pageData['rxutil'] = $this->roundFloat($data['imc-bandwidth']['reads'], 2) . " MB/s";
-                    $this->pageData['txutil'] = $this->roundFloat($data['imc-bandwidth']['writes'], 2) . " MB/s";
+                    $this->pageData['rxutilunit'] = $data['imc-bandwidth']['unit'];
+                    $this->pageData['txutilunit'] = $data['imc-bandwidth']['unit'];
+                    $this->pageData['rxutil'] = $this->roundFloat($data['imc-bandwidth']['reads'], 2);
+                    $this->pageData['txutil'] = $this->roundFloat($data['imc-bandwidth']['writes'], 2);
                 }
             }
             if ($this->settings['DISPPWRDRAW']) {
                 // Older versions of intel_gpu_top in case people haven't updated
                 if (isset($data['power']['value'])) {
-                    $this->pageData['power'] = $this->roundFloat($data['power']['value'], 2) . $data['power']['unit'];
-                // Newer version of intel_gpu_top includes GPU and package power readings, just scrape GPU for now
-                } else {
-                    if (isset($data['power']['Package']) && ($this->settings['DISPPWRDRWSEL'] == "MAX" || $this->settings['DISPPWRDRWSEL'] == "PACKAGE" )) $powerPackage = $this->roundFloat($data['power']['Package'], 2) ; else $powerPackage = 0 ;
-                    if (isset($data['power']['GPU']) && ($this->settings['DISPPWRDRWSEL'] == "MAX" || $this->settings['DISPPWRDRWSEL'] == "GPU" )) $powerGPU = $this->roundFloat($data['power']['GPU'], 2) ;  else $powerGPU = 0 ;
-                    $this->pageData['power'] = max($powerGPU,$powerPackage) . $data['power']['unit'] ;               
+                    $this->pageData['powerunit'] = $data['power']['unit'];
+
+                    $this->pageData['power'] = $this->roundFloat($data['power']['value'], 2);
+                    // Newer version of intel_gpu_top includes GPU and package power readings, just scrape GPU for now
+                } elseif (isset($data['power']['GPU'])) {
+                    $this->pageData['power'] = $this->roundFloat($data['power']['GPU'], 2);
                 }
-            }
-            // According to the sparse documentation, rc6 is a percentage of how little the GPU is requesting power
-            if ($this->settings['DISPPWRSTATE']) {
+
+                // According to the sparse documentation, rc6 is a percentage of how little the GPU is requesting power
                 if (isset($data['rc6']['value'])) {
-                    $this->pageData['powerutil'] = $this->roundFloat(100 - $data['rc6']['value'], 2) . "%";
+                    $this->pageData['powerutil'] = $this->roundFloat(100 - $data['rc6']['value'], 2) . $data['rc6']['unit'];
+                    $this->pageData['powermax'] = (int) ((100 * $this->pageData['power']) / $this->pageData['powerutil']);
                 }
             }
             if ($this->settings['DISPCLOCKS']) {
                 if (isset($data['frequency']['actual'])) {
-                    $this->pageData['clock'] = (int) $this->roundFloat($data['frequency']['actual']);
+                    $this->pageData['clockunit'] = $data['frequency']['unit'];
+                    $this->pageData['clock'] = $this->roundFloat($data['frequency']['actual']);
                 }
             }
             if ($this->settings['DISPINTERRUPT']) {
                 if (isset($data['interrupts']['count'])) {
+                    $this->pageData['interruptsunit'] = $data['interrupts']['unit'];
                     $this->pageData['interrupts'] = (int) $this->roundFloat($data['interrupts']['count']);
                 }
             }
