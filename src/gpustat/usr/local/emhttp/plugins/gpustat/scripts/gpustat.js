@@ -136,150 +136,127 @@ var keyOrder = [
     "thrtlrsn", "sessions",
 ];
 
-const gpustat_dash_build = (_args) => {
-   
-    let target = "tblGPUDash";
+var excludedKeys = [
+    "max", "unit", "pcie", "driver", "bridge_bus",
+    "passedthrough", "vendor", "name", "temp", "util",
+    "appssupp", "processes", "uuid", "sessions", "thrtlrsn", "panel"
+];
+
+var additionalKeys = ["rxutil", "txutil", "encutil", "decutil"];
+
+const gpustat_dash_build = (_args) => {   
+    const target = "tblGPUDash";
 
     $.getJSON('/plugins/gpustat/gpustatus.php?gpus=' + JSON.stringify(_args), (data2) => {
         if (data2) {
             $.each(data2, function (key2, data) {
-                panel = data["panel"];
-                 let gpu_data = [];
-                 let gpu_data_nobars = [];
-                 let gpu_data_bars = [];
-                 let disabled_array = [];
-                 let missing_array = [];
+                let panel = data["panel"];
+                let fragment = document.createDocumentFragment();
+
+                let gpu_data = new Set();
+                let gpu_data_nobars = new Set();
+
                 $.each(data, function (key, value) {
-                    if (value !== null && (
-                        !(
-                            value.toString().includes("N/A") ||
-                            key.includes("max") ||
-                            key.includes("unit") ||
-                            key.includes("pcie") ||
-                            key.includes("driver") ||
-                            key.includes("bridge_bus") ||
-                            key.includes("passedthrough") ||
-                            key.includes("vendor") ||
-                            key.includes("name") ||
-                            key.includes("temp") ||
-                            key.includes("util") ||
-                            key.includes("appssupp") ||
-                            key.includes("processes") ||
-                            key.includes("uuid") ||
-                            key.includes("sessions") ||
-                            key.includes("thrtlrsn") ||
-                            key.includes("panel")
-                        ) ||
-                        ((key === "rxutil" ||
-                            key === "txutil" ||
-                            key === "encutil" ||
-                            key === "decutil") &&
-                            !value.toString().includes("N/A"))
-                    )) {
-                        if (gpu_data.indexOf(key) === -1) gpu_data.push(key);
+                    let isExcludedKey = excludedKeys.some(item => key.includes(item));
+                    let isAdditionalKey = additionalKeys.some(item => key === item);
+                    let isValidValue = value !== null && !value.toString().includes("N/A");
+
+                    if (isValidValue && (!isExcludedKey || isAdditionalKey)) {
+                        gpu_data.add(key);
                         if (!(($(data[key + 'max']).length > 0) || (value.toString().includes('%')))) {
-                            if (gpu_data_nobars.indexOf(key) === -1) gpu_data_nobars.push(key);
+                            gpu_data_nobars.add(key);
                         }
                     }
                 });
-                disabled_array = keyOrder.filter(function (obj) { return gpu_data.indexOf(obj) == -1; });
-                missing_array = gpu_data.filter(function (obj) { return keyOrder.indexOf(obj) == -1; });
-                gpu_data = keyOrder.concat(missing_array).filter(function (obj) { return disabled_array.indexOf(obj) < 0; });
-                gpu_data = gpu_data.filter(function (obj) { return gpu_data_nobars.indexOf(obj) < 0; });
+                
+                // Convert sets to arrays for further processing if needed
+                let gpu_data_array = Array.from(gpu_data);
+                let gpu_data_nobars_array = Array.from(gpu_data_nobars);
+ 
+                // Find missing and disabled keys                 
+                let disabled_array = keyOrder.filter(item => !gpu_data_array.includes(item));
+                let missing_array = gpu_data_array.filter(item => !keyOrder.includes(item));
+                let gpu_data_filtered = keyOrder.concat(missing_array).filter(item => !disabled_array.includes(item))
+                                                                      .filter(item => !gpu_data_nobars_array.includes(item));
 
-                for (var i = 0; i < gpu_data.length; i += 2) {
-                    var $clone = $('#message-template-bars').html();
-                    $clone = $clone
-                        .replaceAll("{{gpuNR}}", panel)
-                        .replaceAll("{{label1}}", keyMap[gpu_data[i]] || gpu_data[i])
-                        .replaceAll("{{label2}}", keyMap[gpu_data[i + 1]] || gpu_data[i + 1])
-                        .replaceAll("{{stat1}}", gpu_data[i])
-                        .replaceAll("{{stat2}}", gpu_data[i + 1]);
+                let templateContent_bars = $('#message-template-bars').html();
+                for (let i = 0; i < gpu_data_filtered.length; i += 2) {
+                    let [key1, key2] = gpu_data_filtered.slice(i, i + 2);
 
-                    if (gpu_data[i + 1]) {
-                        $clone = $clone.replaceAll("'hidden'", "");
+                    let $clone = $(templateContent_bars).removeAttr('id');
+                    $clone.html(
+                        $clone.html()
+                            .replaceAll("{{gpuNR}}", panel)
+                            .replaceAll("{{label1}}", keyMap[key1] || key1)
+                            .replaceAll("{{label2}}", keyMap[key2] || key2)
+                            .replaceAll("{{stat1}}", key1)
+                            .replaceAll("{{stat2}}", key2)
+                    );
+
+                    if (key2) {
+                        $clone.find(".hidden").removeClass("hidden");
                     }
-                    $("#" + target + panel).append($clone);
+
+                    fragment.appendChild($clone[0]);
                 }
-                for (var i = 0; i < gpu_data_nobars.length; i += 3) {
-                    var $clone = $('#message-template-simple').html();
-                    $clone = $clone
-                        .replaceAll("{{gpuNR}}", panel)
-                        .replaceAll("{{label1}}", keyMap[gpu_data_nobars[i]] || gpu_data_nobars[i])
-                        .replaceAll("{{label2}}", keyMap[gpu_data_nobars[i + 1]] || gpu_data_nobars[i + 1])
-                        .replaceAll("{{label3}}", keyMap[gpu_data_nobars[i + 2]] || gpu_data_nobars[i + 2])
-                        .replaceAll("{{stat1}}", gpu_data_nobars[i])
-                        .replaceAll("{{stat2}}", gpu_data_nobars[i + 1])
-                        .replaceAll("{{stat3}}", gpu_data_nobars[i + 2]);
 
-                    if (gpu_data_nobars[i + 1]) {
-                        $clone = $clone.replace("'hidden'", "");
+                let templateContent_simple = $('#message-template-simple').html();
+                for (let i = 0; i < gpu_data_nobars_array.length; i += 3) {
+                    let [key1, key2, key3] = gpu_data_nobars_array.slice(i, i + 3);
+
+                    let $clone = $(templateContent_simple).removeAttr('id');
+                    $clone.html(
+                        $clone.html()
+                            .replaceAll("{{gpuNR}}", panel)
+                            .replaceAll("{{label1}}", keyMap[key1] || key1)
+                            .replaceAll("{{label2}}", keyMap[key2] || key2)
+                            .replaceAll("{{label3}}", keyMap[key3] || key3)
+                            .replaceAll("{{stat1}}", key1)
+                            .replaceAll("{{stat2}}", key2)
+                            .replaceAll("{{stat3}}", key3)
+                    );
+
+                    if (key2) {
+                        $clone.find(".hidden").eq(0).removeClass("hidden");
                     }
-                    if (gpu_data_nobars[i + 2]) {
-                        $clone = $clone.replace("'hidden'", "");
+
+                    if (key3) {
+                        $clone.find(".hidden").eq(0).removeClass("hidden");
                     }
-                    $("#" + target + panel).append($clone);
+
+                    fragment.appendChild($clone[0]);
                 }
+
+                let templateContent_sessions = $('#message-template-sessions').html();
 
                 if (data["vendor"].toLowerCase() === "nvidia") {
-                    var $clone = $('#message-template-sessions').html();
-                    $clone = $clone.replaceAll("{{gpuNR}}", panel)
-                    $("#" + target + panel).append($clone);
+                    let $clone = $(templateContent_sessions).removeAttr('id');
+                    $clone.html(
+                        $clone.html()
+                            .replaceAll("{{gpuNR}}", panel)
+                    );
+                    fragment.appendChild($clone[0]);
                 }
+
+                $("#" + target + panel).append(fragment);
             });
         }
     });
 };
 
+
 function change_visibility(key, value) {
-    $(key).removeClass('hidden');
-    if (parseInt(value) == 0) {
-        $(key).addClass('hidden');
-    }
+    $(key).toggleClass('hidden', parseInt(value) === 0);
 }
 
 function change_color(key, value, redvalue, color) {
-    if (parseInt(value) >= parseInt(redvalue)) {
-        $(key).css({ 'color': color });
-    } else {
-        $(key).css({ 'color': '' });
-    }
+    $(key).css({ 'color': parseInt(value) >= parseInt(redvalue) ? color : '' });
 }
 
 function change_tooltip(key, value, redvalue, title) {
-    if (parseInt(value) >= parseInt(redvalue)) {
-        $(key).attr('title', title);
-    }
+    $(key).attr('title', parseInt(value) >= parseInt(redvalue) ? title : null);
 }
 
 function change_color_string(key, value, redvalue) {
-    if (value === redvalue) {
-        $(key).css({ 'color': 'magenta' });
-    } else {
-        $(key).css({ 'color': 'green' });
-    }
+    $(key).css({ 'color': value === redvalue ? 'magenta' : 'green' });
 }
-
-// TODO: Not currently used due to issue with default reset actually working
-// function resetDATA(form) {
-//     form.VENDOR.value = "nvidia";
-//     form.TEMPFORMAT.value = "C";
-//     form.GPUBUS.value = "0";
-//     form.DISPCLOCKS.value = "1";
-//     form.DISPENCDEC.value = "1";
-//     form.DISPTEMP.value = "1";
-//     form.DISPFAN.value = "1";
-//     form.DISPPCIUTIL.value = "1";
-//     form.DISPPWRDRAW.value = "1";
-//     form.DISPPWRSTATE.value = "1";
-//     form.DISPTHROTTLE.value = "1";
-//     form.DISPSESSIONS.value = "1";
-//     form.UIREFRESH.value = "1";
-//     form.UIREFRESHINT.value = "1000";
-//     form.DISPMEMUTIL.value = "1";
-//     form.DISP3DRENDER.value = "1";
-//     form.DISPBLITTER.value = "1";
-//     form.DISPVIDEO.value = "1";
-//     form.DISPVIDENH.value = "1";
-//     form.DISPINTERRUPT.value = "1";
-// }

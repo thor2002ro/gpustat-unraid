@@ -156,15 +156,17 @@ $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
 
 <script type="text/javascript" src="/plugins/gpustat/scripts/gpustat.js"></script>
 <script type="text/javascript">
+    $(document).ready(function() {
+        function refresh() {
+            $(gpustat_status(<?=json_encode($multigpus);?>));
+        }
 
-function refresh() {
-    $(gpustat_status(<?=json_encode($multigpus);?>));
-}
+        $(gpustat_dash_build(<?=json_encode($multigpus);?>)).promise().done(function() {
+            $(gpustat_status(<?=json_encode($multigpus);?>));
 
-    $(gpustat_dash_build(<?=json_encode($multigpus);?>));
-    $(gpustat_status(<?=json_encode($multigpus);?>));
-    var json = <?=json_encode($multigpus);?> ;
-    if (<?=$gpustat_cfg['UIREFRESH'];?>) {
-        setInterval(refresh, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']);?>);
-    }
+            if (<?=$gpustat_cfg['UIREFRESH'];?>) {
+                setInterval(refresh, <?=max(abs($display['refresh']), $gpustat_cfg['UIREFRESHINT']);?>);
+            }
+        });
+    });
 </script>
