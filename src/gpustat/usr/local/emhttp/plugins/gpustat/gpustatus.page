@@ -1,6 +1,5 @@
 Menu="Dashboard:0"
 Icon="gpustat.png"
-Cond="version_compare(parse_ini_file('/etc/unraid-version')['version'],'6.12.0-beta5', '>')"
 ---
 <?php
  
