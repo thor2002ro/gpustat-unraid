@@ -21,7 +21,7 @@ git clone https://github.com/clbr/radeontop.git --branch master --depth 1
 cd "$GIT_DIR"
 
 CFLAGS="$FLAGS" \
-make amdgpu=1
+make
 
 make install nls=0 \
   PREFIX=/usr \
