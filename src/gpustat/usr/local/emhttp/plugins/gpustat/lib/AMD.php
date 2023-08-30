@@ -217,9 +217,7 @@ class AMD extends Main
                             'pcie_speedmax'     => $br['pcie_speedmax'],
                             'pcie_widthmax'     => $br['pcie_widthmax'],
                             'pcie_speed'        => $br['pcie_speed'],
-                            'pcie_downspeed'    => $br['pcie_downspeed'],
                             'pcie_width'        => $br['pcie_width'],
-                            'pcie_downwidth'    => $br['pcie_downwidth'],
                         ];
                     }
                 }
@@ -232,9 +230,7 @@ class AMD extends Main
                     'pciegenmax'        => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speedmax']) ? $bridge['pcie_speedmax'] : $gpu['pcie_speedmax'])),
                     'pciewidthmax'      => (isset($bridge['pcie_widthmax']) ? $bridge['pcie_widthmax'] : $gpu['pcie_widthmax']),
                     'pciegen'           => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speed']) ? $bridge['pcie_speed'] : $gpu['pcie_speed'])),
-                    'pcie_downspeed'    => (int) ((isset($bridge['pcie_downspeed']) ? $bridge['pcie_downspeed'] : $gpu['pcie_downspeed']) == 'ok' ? 0 : 1),
                     'pciewidth'         => (isset($bridge['pcie_width']) ? $bridge['pcie_width'] : $gpu['pcie_width']),
-                    'pcie_downwidth'    => (int) ((isset($bridge['pcie_downwidth']) ? $bridge['pcie_downwidth'] : $gpu['pcie_downwidth']) == 'ok' ? 0 : 1),
                     'driver'            => $gpu['driver'],
                     'passedthrough'     => ($gpu['driver'] == 'vfio-pci' ? "Passthrough" : "Normal"),
                     'bridge_bus'        => $bridgebus,

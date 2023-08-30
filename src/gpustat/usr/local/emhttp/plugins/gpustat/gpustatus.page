@@ -65,7 +65,7 @@ foreach ($multigpus as $id=>$gpu) {
         $stats .= "<i class='fa fa-microchip fa-1x'></i>&nbsp<span class='gpu-stats-primary gpu{$i}-util'></span>&nbsp;&nbsp;&nbsp;";
         if ($gpu_nv || $gpu_amd) {
         if ($gpustat_cfg['DISPTEMP']) $stats .= "<i class='fa fa-thermometer-half fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-temp'></span>&nbsp;&nbsp;&nbsp;" ;
-        $stats .= "<span title='PCIe Gen' class='gpu-stats-primary'><i class='fa fa-cogs fa-1x'></i>&nbsp;<span class='gpu{$i}-pciegen'></span>&nbsp;<i id='gpu{$i}-pciegen-arrow' class='fa fa-caret-down fa-1x' style='color:red; display: inline;'></i><span>&nbsp;-&nbsp;</span><span class='gpu{$i}-pciewidth'></span>&nbsp;<i id='gpu{$i}-pciewidth-arrow' class='fa fa-caret-down fa-1x' style='color:red; display: inline;'></i></span>&nbsp;&nbsp;&nbsp;" ;
+        $stats .= "<span title='PCIe Gen' class='gpu-stats-primary'><i class='fa fa-cogs fa-1x'></i>&nbsp;<span class='gpu{$i}-pciegen'></span>&nbsp;<i id='gpu{$i}-pciegen-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i><span>&nbsp;-&nbsp;</span><span class='gpu{$i}-pciewidth'></span>&nbsp;<i id='gpu{$i}-pciewidth-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i></span>&nbsp;&nbsp;&nbsp;";
         }
         if ($gpu_nv && $gpustat_cfg['DISPSESSIONS']) $stats .="<span> Processes: <span class='gpu{$i}-sessions'></span></span>";
     $stats .= "<br><br></div>" ;

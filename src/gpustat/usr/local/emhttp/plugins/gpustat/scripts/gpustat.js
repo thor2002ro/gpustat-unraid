@@ -51,8 +51,11 @@ const gpustat_status = (_args) => {
                         $('.gpu' + panel + '-' + key).html(value);
                     }
                 });
-                change_visibility('#gpu' + panel + '-' + 'pciegen-arrow', data["pcie_downspeed"]);
-                change_visibility('#gpu' + panel + '-' + 'pciewidth-arrow', data["pcie_downwidth"]);
+                let pcieSpeedDownVisible = parseInt(data["pciegen"]) >= parseInt(data["pciegenmax"]) ? 0 : 1;
+                let pcieWidthDownVisible = parseInt(data["pciewidth"]) >= parseInt(data["pciewidthmax"]) ? 0 : 1;
+                change_visibility('#gpu' + panel + '-' + 'pciegen-arrow', pcieSpeedDownVisible);
+                change_visibility('#gpu' + panel + '-' + 'pciewidth-arrow', pcieWidthDownVisible);
+
                 change_color('.gpu' + panel + '-' + 'util', data["util"], 80, 'red');
                 change_color('.gpu' + panel + '-' + 'temp', data["temp"], data["tempmax"] - 15, 'red');
                 change_color('#gpu' + panel + '-' + 'pcie', data["bridge_bus"], 0, 'brown');
