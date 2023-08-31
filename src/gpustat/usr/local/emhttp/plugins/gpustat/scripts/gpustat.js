@@ -92,6 +92,8 @@ var keyMap = {
     "primassem": "Prim Assem",         // Primitive Assembl
     "depthblk": "Depth Blk",           // Depth Block
     "colorblk": "Color Blk",           // Color Block
+    "uvd": "UVD",
+    "vce0": "VCE0",
     "gttused": "GTT Mem",              // used GTT
     //nvidia
     "sm_clock": "Shader Clock",         //?????
@@ -132,6 +134,7 @@ var keyOrder = [
     "shaderexp", "shaderinter",
     "scancon", "primassem",
     "depthblk", "colorblk",
+    "uvd", "vce0",
     //nvidia
     "encutil", "decutil",
     "rxutil", "txutil",

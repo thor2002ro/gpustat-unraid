@@ -27,6 +27,8 @@ class AMD extends Main
         'pa'    => ['primassem'],
         'db'    => ['depthblk'],
         'cb'    => ['colorblk'],
+        'uvd'   => ['uvd'],
+        'vce0'  => ['vce0'],
         'vram'  => ['memusedutil', 'memused'],
         'gtt'   => ['gttusedutil', 'gttused'],
         'mclk'  => ['memclockutil', 'memclock', 'clocks'],

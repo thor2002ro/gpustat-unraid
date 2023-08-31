@@ -38,26 +38,21 @@ if (isset($gpustat_inventory) && $gpustat_inventory) {
         switch (strtolower($gpu['vendor'])) {
             case 'amd':
                 $return = (new AMD($gpustat_cfg))->getStatistics($gpu);
-                $decode = json_decode($return, true);
-                $decode["panel"] = $gpu['panel'];
-                $data[$gpu["id"]] = $decode;
                 break;
             case 'intel':
                 $return = (new Intel($gpustat_cfg))->getStatistics($gpu);
-                $decode = json_decode($return, true);
-                $decode["panel"] = $gpu['panel'];
-                $data[$gpu["id"]] = $decode;
                 break;
             case 'nvidia':
                 $return = (new Nvidia($gpustat_cfg))->getStatistics($gpu);
-                $decode = json_decode($return, true);
-                $decode["panel"] = $gpu['panel'];
-                $data[$gpu["id"]] = $decode;
                 break;
             default:
                 print_r(Error::get(Error::CONFIG_SETTINGS_NOT_VALID));
         }
+        $decode = json_decode($return, true);
+        $decode["panel"] = $gpu['panel'];
+        $data[$gpu["id"]] = $decode;
     }
+    
     $json = json_encode($data);
     header('Content-Type: application/json');
     header('Content-Length: ' . ES . strlen($json));

@@ -4,69 +4,128 @@ Title="GPU Statistics"
 ---
 
 <?php
+$settings = array(
+    "Common" => array(
+        "GPU and Memory Clocks" => "DISPCLOCKS",
+        "PCI/IMC Utilization" => "DISPPCIUTIL",
+        "Power Draw" => "DISPPWRDRAW",
+        "Power State" => "DISPPWRSTATE",
+        "Memory Utilization" => "DISPMEMUSEDUTIL",
+        "Temperature" => "DISPTEMP",
+        "Fan Usage" => "DISPFAN",
+    ),
+    "Nvidia" => array(
+        "Encoder / Decoder Utilization" => "DISPENCDEC",
+        "Throttle Status" => "DISPTHROTTLE",
+        "Active Sessions" => "DISPSESSIONS",
+    ),
+    "Intel" => array(
+        "3D Render Load" => "DISP3DRENDER",
+        "Blitter Load" => "DISPBLITTER",
+        "Video Load" => "DISPVIDEO",
+        "Video Enhance Load" => "DISPVIDENH",
+        "Interrupts Per Second" => "DISPINTERRUPT",
+    ),
+    "AMD" => array(
+        "Event Engine Usage" => "DISPEVENT",
+        "Vertex Tesselator Usage" => "DISPVERTEX",
+        "Texture Addresser Usage" => "DISPTEXTURE",
+        "Shader Export Usage" => "DISPSHADEREXP",
+        "Sequencer Cache Usage" => "DISPSEQUENCER",
+        "Shader Interpolator Usage" => "DISPSHADERINTER",
+        "Scan Converter Usage" => "DISPSCANCON",
+        "Primitive Assembly Usage" => "DISPPRIMASSEM",
+        "Depth Block Usage" => "DISPDEPTHBLK",
+        "Color Block Usage" => "DISPCOLORBLK",
+        "UVD" => "DISPUVD",
+        "VCE0" => "DISPVCE0",
+        "Graphics Translation Usage" => "DISPGTTUSEDUTIL",
+    ),
+);
 
-    function save_ini_file($file, $array) {
-       $plugin = "gpustat";
+function save_ini_file($file, $array) {
+    $plugin = "gpustat";
 
-	  $res = array();
-      foreach($array as $key => $val) {
+    $res = array();
+    foreach($array as $key => $val) {
         if(is_array($val)) {
-          $res[] = PHP_EOL."[$key]";
-          foreach($val as $skey => $sval) $res[] = "$skey = ".(is_numeric($sval) ? $sval : '"'.$sval.'"');
+            $res[] = PHP_EOL."[$key]";
+            foreach($val as $skey => $sval) $res[] = "$skey = ".(is_numeric($sval) ? $sval : '"'.$sval.'"');
         } else {
-          $res[] = "$key = ".(is_numeric($val) ? $val : '"'.$val.'"');
-         }
-      }
+            $res[] = "$key = ".(is_numeric($val) ? $val : '"'.$val.'"');
+        }
+    }
 
-      /* Write changes to tmp file. */
-      file_put_contents($file, implode(PHP_EOL, $res));
+    /* Write changes to tmp file. */
+    file_put_contents($file, implode(PHP_EOL, $res));
 
-      /* Write changes to flash. */
-      $file_path = pathinfo($file);
-      if ($file_path['extension'] == "cfg") {
+    /* Write changes to flash. */
+    $file_path = pathinfo($file);
+    if ($file_path['extension'] == "cfg") {
         file_put_contents("/boot/config/plugins/".$plugin."/".basename($file), implode(PHP_EOL, $res));
-      }
+    }
+}
+
+function save_cfg($val, $gpus, $settings) {
+    $json_array = array();
+    foreach ($val['MULTIGPU'] as $pciid) {
+        $gpupciid = $pciid;
+        $json_array[$gpupciid]['id'] = $gpus[$gpupciid]['id'];
+        $json_array[$gpupciid]['model'] = $gpus[$gpupciid]['model'];
+        $json_array[$gpupciid]['vendor'] = $gpus[$gpupciid]['vendor'];
+        $json_array[$gpupciid]['guid'] = $gpus[$gpupciid]['guid'];
+        $json_array[$gpupciid]['bridge_chip'] = $gpus[$gpupciid]['bridge_chip'];
+        
+        // Update the stats array
+        $json_array[$gpupciid]['stats'] = array();
+        
+        $gpuid = str_replace(".", "_", $gpus[$gpupciid]['id']); // Replace period with underscore in GPU ID PHP issue
+        foreach ($settings as $section => $sectionSettings) {
+            foreach ($sectionSettings as $label => $settingName) {              
+                $settingNameWithGPU = $settingName . '_' . $gpuid; // Append GPU ID to the setting name                    
+                $json_array[$gpupciid]['stats'][$settingName] = $val[$settingNameWithGPU];
+                unset($val[$settingNameWithGPU]);                
+            }
+        }
     }
 
-    function save_cfg($val,$gpus) {
-
-        $json_array = array() ;
-          foreach ($val['MULTIGPU'] as $pciid) {
-            $gpupciid = $pciid ;
-            $json_array[$pciid]['id'] = $gpus[$gpupciid]['id'] ;
-            $json_array[$pciid]['model'] = $gpus[$gpupciid]['model'] ;
-            $json_array[$pciid]['vendor'] = $gpus[$gpupciid]['vendor'] ;
-            $json_array[$pciid]['guid'] = $gpus[$gpupciid]['guid'] ;
-            $json_array[$pciid]['bridge_chip'] = $gpus[$gpupciid]['bridge_chip'] ;
-          }
-
-        $val["MULTIGPUJSON"] = urlencode(json_encode($json_array)) ;
-        if (isset($val['MULTIGPU'])) {      
-          if($val['MULTIGPU'] != "") $val['MULTIGPU'] = implode("," , $val['MULTIGPU']) ;
-        } else $val['MULTIGPU'] = "" ;
-      
-      save_ini_file("gpustat.cfg", $val) ;
+    $val["MULTIGPUJSON"] = urlencode(json_encode($json_array));
+    
+    if (isset($val['MULTIGPU'])) {
+        if ($val['MULTIGPU'] != "") {
+            $val['MULTIGPU'] = implode(",", $val['MULTIGPU']);
+        }
+    } else {
+        $val['MULTIGPU'] = "";
     }
 
-    $cfg = $gpustat_cfg        = parse_plugin_cfg("gpustat", true);
-    $gpustat_inventory  = true;
+    save_ini_file("gpustat.cfg", $val);
+}
 
-      include_once './plugins/gpustat/gpustatus.php';
+$cfg = $gpustat_cfg = parse_plugin_cfg("gpustat", true);
+$gpustat_inventory = true;
 
-    if (count($_POST)) {
-      $cfg = NULL ;
-      if ($_POST['#apply'] == "_(Apply)_") {
+if (!isset($gpustat_cfg["MULTIGPUJSON"])) {
+    $gpustat_cfg["MULTIGPUJSON"] = "%7B%22%22%3A%7B%22id%22%3A%22None%22%2C%22model%22%3A%22None%22%2C%22vendor%22%3A%22None%22%2C%22guid%22%3A%22None%22%2C%22bridge_chip%22%3Anull%2C%22stats%22%3A%7B%22DISPCLOCKS%22%3A%221%22%2C%22DISPPCIUTIL%22%3A%221%22%2C%22DISPPWRDRAW%22%3A%221%22%2C%22DISPPWRSTATE%22%3A%221%22%2C%22DISPMEMUSEDUTIL%22%3A%221%22%2C%22DISPTEMP%22%3A%221%22%2C%22DISPFAN%22%3A%221%22%2C%22DISPENCDEC%22%3A%221%22%2C%22DISPTHROTTLE%22%3A%221%22%2C%22DISPSESSIONS%22%3A%221%22%2C%22DISP3DRENDER%22%3A%221%22%2C%22DISPBLITTER%22%3A%221%22%2C%22DISPVIDEO%22%3A%221%22%2C%22DISPVIDENH%22%3A%221%22%2C%22DISPINTERRUPT%22%3A%221%22%2C%22DISPPWRDRWSEL%22%3A%22GPU%22%2C%22DISPEVENT%22%3A%221%22%2C%22DISPVERTEX%22%3A%221%22%2C%22DISPTEXTURE%22%3A%221%22%2C%22DISPSHADEREXP%22%3A%221%22%2C%22DISPSEQUENCER%22%3A%221%22%2C%22DISPSHADERINTER%22%3A%221%22%2C%22DISPSCANCON%22%3A%221%22%2C%22DISPPRIMASSEM%22%3A%221%22%2C%22DISPDEPTHBLK%22%3A%221%22%2C%22DISPCOLORBLK%22%3A%221%22%2C%22DISPGTTUSEDUTIL%22%3A%221%22%7D%7D%7D";
+}
+$multigpus = json_decode(urldecode($gpustat_cfg["MULTIGPUJSON"]), true);
+
+include_once './plugins/gpustat/gpustatus.php';
+
+if (count($_POST)) {
+    $cfg = NULL ;
+    if ($_POST['#apply'] == "_(Apply)_") {
         array_map(function($k, $v) use (&$cfg) { if($k[0] != "#") $cfg[$k] = $v; }, array_keys($_POST), $_POST );
-        save_cfg($cfg,$gpustat_data) ;
-        $gpustat_cfg        = parse_plugin_cfg("gpustat", true);
+        save_cfg($cfg, $gpustat_data, $settings) ;
+        $gpustat_cfg = parse_plugin_cfg("gpustat", true);
+        $multigpus = json_decode(urldecode($gpustat_cfg["MULTIGPUJSON"]), true);
         unset($_POST) ;
-      } 
-    }
-
+    } 
+}
 ?>
 <script>
 $(function() {
-  $('#MULTIGPU').dropdownchecklist({emptyText:"_(None)_", width:166});
+    $('#MULTIGPU').dropdownchecklist({emptyText:"_(None)_", width:166});
 });
 </script>
 
@@ -95,7 +154,6 @@ $(function() {
 
 Unit ID for Dashboard(Multiple):
 : <ul class="gpu-custom-list" id="gpu-list">
-
 <?php	
 if (isset($gpustat_data)) {
     foreach ($gpustat_data as $gpu) {
@@ -113,205 +171,73 @@ if (isset($gpustat_data)) {
 }
 ?>
 </ul>
+<br>
 
 Temperature Format:
 : <select id="TEMPFORMAT" name="TEMPFORMAT" size="1">
     <?=mk_option($gpustat_cfg['TEMPFORMAT'], "C", "Celsius");?>
     <?=mk_option($gpustat_cfg['TEMPFORMAT'], "F", "Fahrenheit");?>
-  </select>
+</select>
 
 UI Automatic Refresh / Interval (Milliseconds):
 : <select id="UIREFRESH" name="UIREFRESH" size="1">
     <?=mk_option($gpustat_cfg['UIREFRESH'], "0", "No");?>
     <?=mk_option($gpustat_cfg['UIREFRESH'], "1", "Yes");?>
-  </select>
-  <input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="1000">
+</select>
+<input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="1000">
+<br>
 
-<h2><b>Enabled Pollers</b></h2>
+<h4><b>Settings</b></h4>
+<?php
+foreach ($multigpus as $gpu) {
+    $gpumodel = $gpu['model'];
+    //$gpuid = $gpu['id'];
+    $gpuid = str_replace(".", "_", $gpu['id']); // Replace period with underscore in GPU ID PHP issue
+    echo '<li class="section">';
+    echo '<label class="section-label">Settings for GPU ' . $gpumodel . '</label>';
+    echo '<ul class="section-list">';
+    foreach ($settings as $section => $sectionSettings) {
+        echo '<li>';
+        //echo '<label class="setting-section">' . $section . '</label>';
+        echo '<ul class="setting-list">';
+        foreach ($sectionSettings as $label => $settingName) {
+            $settingNameWithGPU = $settingName . '_' . $gpuid; // Append GPU ID to the setting name
+            $isChecked = ($gpu['stats'][$settingName] == 1) ? 'checked' : '';
+            echo '<li>';
+            echo '<input type="hidden" name="' . $settingNameWithGPU . '" value="0">';
+            echo '<input type="checkbox" name="' . $settingNameWithGPU . '" value="1" ' . $isChecked . '>';
+            echo '<label>' . $label . '</label>';
+            echo '</li>';
+        }
+        echo '</ul>';
+        echo '</li>';
+    }
+    echo '</ul>';
+    echo '</li>';
 
-<h4><b>Multiple Vendors</b></h4>
+    // Display the GPU array for debugging
+    // echo '<li>';
+    // echo '<pre>';
+    // print_r($gpu);
+    // echo '</pre>';
+    // echo '</li>';
+}
+?>
 
-GPU and Memory Clocks (Nvidia/Intel/AMD):
-: <select id="DISPCLOCKS" name="DISPCLOCKS" size="1">
-    <?=mk_option($gpustat_cfg['DISPCLOCKS'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPCLOCKS'], "1", "Yes");?>
-  </select>
-
-PCI/IMC Utilization (Nvidia/Intel):
-: <select id="DISPPCIUTIL" name="DISPPCIUTIL" size="1">
-    <?=mk_option($gpustat_cfg['DISPPCIUTIL'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPPCIUTIL'], "1", "Yes");?>
-  </select>
-
-Power Draw (Nvidia/Intel/AMD**):
-: <select id="DISPPWRDRAW" name="DISPPWRDRAW" size="1">
-    <?=mk_option($gpustat_cfg['DISPPWRDRAW'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPPWRDRAW'], "1", "Yes");?>
-  </select>
-
-Power State (Nvidia/Intel):
-: <select id="DISPPWRSTATE" name="DISPPWRSTATE" size="1">
-    <?=mk_option($gpustat_cfg['DISPPWRSTATE'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPPWRSTATE'], "1", "Yes");?>
-  </select>
-
-Memory Utilization (Nvidia/AMD):
-: <select id="DISPMEMUSEDUTIL" name="DISPMEMUSEDUTIL" size="1">
-    <?=mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPMEMUSEDUTIL'], "1", "Yes");?>
-  </select>
-
-Temperature (Nvidia/AMD):
-: <select id="DISPTEMP" name="DISPTEMP" size="1">
-    <?=mk_option($gpustat_cfg['DISPTEMP'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPTEMP'], "1", "Yes");?>
-  </select>
-
-Fan Usage (Nvidia/AMD**):
-: <select id="DISPFAN" name="DISPFAN" size="1">
-    <?=mk_option($gpustat_cfg['DISPFAN'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPFAN'], "1", "Yes");?>
-  </select>
-
-<h4><b>Nvidia Specific</b></h4>
-
-Encoder / Decoder Utilization:
-: <select id="DISPENCDEC" name="DISPENCDEC" size="1">
-    <?=mk_option($gpustat_cfg['DISPENCDEC'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPENCDEC'], "1", "Yes");?>
-  </select>
-
-Throttle Status:
-: <select id="DISPTHROTTLE" name="DISPTHROTTLE" size="1">
-    <?=mk_option($gpustat_cfg['DISPTHROTTLE'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPTHROTTLE'], "1", "Yes");?>
-  </select>
-
-Active Sessions:
-: <select id="DISPSESSIONS" name="DISPSESSIONS" size="1">
-    <?=mk_option($gpustat_cfg['DISPSESSIONS'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPSESSIONS'], "1", "Yes");?>
-  </select>
-
-<h4><b>Intel Specific</b></h4>
-
-3D Render Load:
-: <select id="DISP3DRENDER" name="DISP3DRENDER" size="1">
-    <?=mk_option($gpustat_cfg['DISP3DRENDER'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISP3DRENDER'], "1", "Yes");?>
-  </select>
-
-Blitter Load:
-: <select id="DISPBLITTER" name="DISPBLITTER" size="1">
-    <?=mk_option($gpustat_cfg['DISPBLITTER'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPBLITTER'], "1", "Yes");?>
-  </select>
-
-Video Load:
-: <select id="DISPVIDEO" name="DISPVIDEO" size="1">
-    <?=mk_option($gpustat_cfg['DISPVIDEO'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPVIDEO'], "1", "Yes");?>
-  </select>
-
-Video Enhance Load:
-: <select id="DISPVIDENH" name="DISPVIDENH" size="1">
-    <?=mk_option($gpustat_cfg['DISPVIDENH'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPVIDENH'], "1", "Yes");?>
-  </select>
-
-Interrupts Per Second:
-: <select id="DISPINTERRUPT" name="DISPINTERRUPT" size="1">
-    <?=mk_option($gpustat_cfg['DISPINTERRUPT'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPINTERRUPT'], "1", "Yes");?>
-  </select>
-
-Power Draw Selection:
-: <select id="DISPPWRDRWSEL" name="DISPPWRDRWSEL" size="1">
-    <?=mk_option($gpustat_cfg['DISPPWRDRWSEL'], "GPU", "GPU");?>
-    <?=mk_option($gpustat_cfg['DISPPWRDRWSEL'], "PACKAGE", "Package");?>
-    <?=mk_option($gpustat_cfg['DISPPWRDRWSEL'], "MAX", "Max of GPU or Package");?>
-  </select>  
-
-<h4><b>AMD Specific</b></h4>
-
-Event Engine Usage:
-: <select id="DISPEVENT" name="DISPEVENT" size="1">
-    <?=mk_option($gpustat_cfg['DISPEVENT'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPEVENT'], "1", "Yes");?>
-  </select>
-
-Vertex Tesselator Usage:
-: <select id="DISPVERTEX" name="DISPVERTEX" size="1">
-    <?=mk_option($gpustat_cfg['DISPVERTEX'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPVERTEX'], "1", "Yes");?>
-  </select>
-
-Texture Addresser Usage:
-: <select id="DISPTEXTURE" name="DISPTEXTURE" size="1">
-    <?=mk_option($gpustat_cfg['DISPTEXTURE'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPTEXTURE'], "1", "Yes");?>
-  </select>
-
-Shader Export Usage:
-: <select id="DISPSHADEREXP" name="DISPSHADEREXP" size="1">
-    <?=mk_option($gpustat_cfg['DISPSHADEREXP'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPSHADEREXP'], "1", "Yes");?>
-  </select>
-
-Sequencer Cache Usage:
-: <select id="DISPSEQUENCER" name="DISPSEQUENCER" size="1">
-    <?=mk_option($gpustat_cfg['DISPSEQUENCER'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPSEQUENCER'], "1", "Yes");?>
-  </select>
-
-Shader Interpolator Usage:
-: <select id="DISPSHADERINTER" name="DISPSHADERINTER" size="1">
-    <?=mk_option($gpustat_cfg['DISPSHADERINTER'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPSHADERINTER'], "1", "Yes");?>
-  </select>
-
-Scan Converter Usage:
-: <select id="DISPSCANCON" name="DISPSCANCON" size="1">
-    <?=mk_option($gpustat_cfg['DISPSCANCON'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPSCANCON'], "1", "Yes");?>
-  </select>
-
-Primitive Assembly Usage:
-: <select id="DISPPRIMASSEM" name="DISPPRIMASSEM" size="1">
-    <?=mk_option($gpustat_cfg['DISPPRIMASSEM'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPPRIMASSEM'], "1", "Yes");?>
-  </select>
-
-Depth Block Usage:
-: <select id="DISPDEPTHBLK" name="DISPDEPTHBLK" size="1">
-    <?=mk_option($gpustat_cfg['DISPDEPTHBLK'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPDEPTHBLK'], "1", "Yes");?>
-  </select>
-
-Color Block Usage:
-: <select id="DISPCOLORBLK" name="DISPCOLORBLK" size="1">
-    <?=mk_option($gpustat_cfg['DISPCOLORBLK'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPCOLORBLK'], "1", "Yes");?>
-  </select>
-
-Graphics Translation Usage:
-: <select id="DISPGTTUSEDUTIL" name="DISPGTTUSEDUTIL" size="1">
-    <?=mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "0", "No");?>
-    <?=mk_option($gpustat_cfg['DISPGTTUSEDUTIL'], "1", "Yes");?>
-  </select>
+<br>
 
 Debug:
 : <select id="UIDEBUG" name="UIDEBUG" size="1">
     <?= mk_option($gpustat_cfg['UIDEBUG'], "0", "No"); ?>
     <?= mk_option($gpustat_cfg['UIDEBUG'], "1", "Yes"); ?>
-  </select>
+</select>
+
 <br><br><br>
-
+<br>
 : <input id="btnApply" type="submit" name="#apply" value="_(Apply)_"><input type="button" value="Done" onClick="done()">
-
 <br><br><br>
 Note: Where noted, not all metrics are provided by the vendor utilities and this plugin cannot magically make that work.
-<br><br><br>
+<br><br>
 **Metric is available for discrete AMD GPUs and not APUs
 </form>
 
