@@ -8,7 +8,14 @@ $settings = array(
     "Common" => array(
         "GPU and Memory Clocks" => "DISPCLOCKS",
         "PCI/IMC Utilization" => "DISPPCIUTIL",
-        "Power Draw" => "DISPPWRDRAW",
+        "Power Draw" => array(
+            "name" => "DISPPWRDRAW",
+            "options" => array(
+                "GPU" => "GPU",
+                "PACKAGE" => "PACKAGE",
+                "MAX" => "MAX",
+            ),
+        ),
         "Power State" => "DISPPWRSTATE",
         "Memory Utilization" => "DISPMEMUSEDUTIL",
         "Temperature" => "DISPTEMP",
@@ -43,6 +50,9 @@ $settings = array(
     ),
 );
 
+//error_reporting(E_ALL);
+//ini_set('display_errors', '1');
+
 function save_ini_file($file, $array) {
     $plugin = "gpustat";
 
@@ -75,22 +85,28 @@ function save_cfg($val, $gpus, $settings) {
         $json_array[$gpupciid]['vendor'] = $gpus[$gpupciid]['vendor'];
         $json_array[$gpupciid]['guid'] = $gpus[$gpupciid]['guid'];
         $json_array[$gpupciid]['bridge_chip'] = $gpus[$gpupciid]['bridge_chip'];
-        
+
         // Update the stats array
         $json_array[$gpupciid]['stats'] = array();
-        
+
         $gpuid = str_replace(".", "_", $gpus[$gpupciid]['id']); // Replace period with underscore in GPU ID PHP issue
         foreach ($settings as $section => $sectionSettings) {
-            foreach ($sectionSettings as $label => $settingName) {              
-                $settingNameWithGPU = $settingName . '_' . $gpuid; // Append GPU ID to the setting name                    
-                $json_array[$gpupciid]['stats'][$settingName] = $val[$settingNameWithGPU];
-                unset($val[$settingNameWithGPU]);                
+            foreach ($sectionSettings as $label => $settingData) {
+                if (is_array($settingData)) {
+                    $settingNameWithGPU = $settingData['name'] . '_' . $gpuid . '_SEL'; // Append GPU ID to the setting name
+                    $selectedOption = $val[$settingNameWithGPU];
+                    $json_array[$gpupciid]['stats'][$settingData['name']] = $selectedOption;
+                } else {
+                    $settingNameWithGPU = $settingData . '_' . $gpuid; // Append GPU ID to the setting name
+                    $json_array[$gpupciid]['stats'][$settingData] = $val[$settingNameWithGPU];
+                }
+                unset($val[$settingNameWithGPU]);
             }
         }
     }
 
     $val["MULTIGPUJSON"] = urlencode(json_encode($json_array));
-    
+
     if (isset($val['MULTIGPU'])) {
         if ($val['MULTIGPU'] != "") {
             $val['MULTIGPU'] = implode(",", $val['MULTIGPU']);
@@ -113,14 +129,14 @@ $multigpus = json_decode(urldecode($gpustat_cfg["MULTIGPUJSON"]), true);
 include_once './plugins/gpustat/gpustatus.php';
 
 if (count($_POST)) {
-    $cfg = NULL ;
+    $cfg = NULL;
     if ($_POST['#apply'] == "_(Apply)_") {
         array_map(function($k, $v) use (&$cfg) { if($k[0] != "#") $cfg[$k] = $v; }, array_keys($_POST), $_POST );
-        save_cfg($cfg, $gpustat_data, $settings) ;
+        save_cfg($cfg, $gpustat_data, $settings);
         $gpustat_cfg = parse_plugin_cfg("gpustat", true);
         $multigpus = json_decode(urldecode($gpustat_cfg["MULTIGPUJSON"]), true);
-        unset($_POST) ;
-    } 
+        unset($_POST);
+    }
 }
 ?>
 <script>
@@ -154,7 +170,7 @@ $(function() {
 
 Unit ID for Dashboard(Multiple):
 : <ul class="gpu-custom-list" id="gpu-list">
-<?php	
+<?php
 if (isset($gpustat_data)) {
     foreach ($gpustat_data as $gpu) {
         $gpudesc = sprintf(
@@ -195,26 +211,31 @@ foreach ($multigpus as $gpu) {
     $gpuid = str_replace(".", "_", $gpu['id']); // Replace period with underscore in GPU ID PHP issue
     echo '<li class="section">';
     echo '<label class="section-label">Settings for GPU ' . $gpumodel . '</label>';
-    echo '<ul class="section-list">';
-    foreach ($settings as $section => $sectionSettings) {
-        echo '<li>';
-        //echo '<label class="setting-section">' . $section . '</label>';
-        echo '<ul class="setting-list">';
-        foreach ($sectionSettings as $label => $settingName) {
-            $settingNameWithGPU = $settingName . '_' . $gpuid; // Append GPU ID to the setting name
-            $isChecked = ($gpu['stats'][$settingName] == 1) ? 'checked' : '';
+    echo '<ul class="setting-list">';
+    foreach ($settings as $sectionSettings) {
+        foreach ($sectionSettings as $label => $settingData) {
             echo '<li>';
-            echo '<input type="hidden" name="' . $settingNameWithGPU . '" value="0">';
-            echo '<input type="checkbox" name="' . $settingNameWithGPU . '" value="1" ' . $isChecked . '>';
-            echo '<label>' . $label . '</label>';
+            if (is_array($settingData)) {
+                $settingNameWithGPU = $settingData['name'] . '_' . $gpuid . '_SEL'; // Append GPU ID to the setting name
+                echo '<label>' . $label . '</label>';
+                echo '<select name="' . $settingNameWithGPU . '_SEL">';
+                foreach ($settingData['options'] as $optionValue => $optionLabel) {
+                    $selected = ($gpu['stats'][$settingData['name']] == $optionValue) ? 'selected' : '';
+                    echo '<option value="' . $optionValue . '" ' . $selected . '>' . $optionLabel . '</option>';
+                }
+                echo '</select>';
+            } else {
+                $settingNameWithGPU = $settingData . '_' . $gpuid; // Append GPU ID to the setting name
+                $isChecked = ($gpu['stats'][$settingData] == 1) ? 'checked' : '';
+                echo '<input type="hidden" name="' . $settingNameWithGPU . '" value="0">';
+                echo '<input type="checkbox" name="' . $settingNameWithGPU . '" value="1" ' . $isChecked . '>';
+                echo '<label>' . $label . '</label>';
+            }
             echo '</li>';
         }
-        echo '</ul>';
-        echo '</li>';
     }
     echo '</ul>';
     echo '</li>';
-
     // Display the GPU array for debugging
     // echo '<li>';
     // echo '<pre>';
@@ -222,6 +243,7 @@ foreach ($multigpus as $gpu) {
     // echo '</pre>';
     // echo '</li>';
 }
+
 ?>
 
 <br>
