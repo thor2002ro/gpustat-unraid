@@ -206,10 +206,10 @@ $partialExcludeKeys = array(
     "appssupp", "processes", "uuid", "sessions", "thrtlrsn", "panel", "stats"
 );
 
-// Build settings needed for each GPU
-$processedGPUPoolData = processGPUPoolData($gpustat_pool, $partialExcludeKeys);
-
 if (isset($gpustat_data)) {
+     // Build settings needed for each GPU
+     $processedGPUPoolData = processGPUPoolData($gpustat_pool, $partialExcludeKeys);
+
      foreach ($gpustat_data as $gpufresh) {
         $gpumodel_fresh = $gpufresh['model'];
         $gpuid_fresh = $gpufresh['id'];
