@@ -289,20 +289,3 @@ Note: Where noted, not all metrics are provided by the vendor utilities and this
 <br><br>
 **Metric is available for discrete AMD GPUs and not APUs
 </form>
-
-<script>
-function setDynamicListHeight() {
-    var gpuList = document.getElementById('gpu-list');
-    var listItems = gpuList.getElementsByTagName('li');
-    var totalHeight = 0;
-
-    for (var i = 0; i < listItems.length; i++) {
-        totalHeight += listItems[i].offsetHeight;
-    }
-
-    gpuList.style.maxHeight = totalHeight + 'px';
-}
-
-// Call the function when the page loads
-window.addEventListener('load', setDynamicListHeight);
-</script>
