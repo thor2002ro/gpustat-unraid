@@ -3,6 +3,7 @@ Icon="gpustat.png"
 Title="GPU Statistics"
 ---
 
+
 <?php
 // Define settings for GPU metrics
 $settings = array(
@@ -143,6 +144,7 @@ if (count($_POST)) {
     }
 }
 ?>
+
 <script>
 $(function() {
     $('#MULTIGPU').dropdownchecklist({emptyText:"_(None)_", width:166});
@@ -152,46 +154,6 @@ $(function() {
 <h2><b>Runtime</b></h2>
 <form markdown="1" name="gpustat" method="POST" >
 <input type="hidden" name="#file" value="gpustat/gpustat.cfg" />
-
-<style>
-    /* Styles for the custom list-like appearance */
-    .gpu-custom-list {
-        list-style: none;
-        width: 500px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 0;
-        max-height: 150px;
-        overflow-y: auto;
-    }
-
-    .gpu-custom-list li {
-        cursor: pointer;
-        padding: 10px;
-        border-bottom: 1px solid #ccc;
-    }
-</style>
-
-Unit ID for Dashboard(Multiple):
-: <ul class="gpu-custom-list" id="gpu-list">
-<?php
-if (isset($gpustat_data)) {
-    foreach ($gpustat_data as $gpu) {
-        $gpudesc = sprintf(
-            '%s: %s%s%s',
-            $gpu['id'],
-            $gpu['model'],
-            isset($gpu['bridge_chip']) ? ' - ' . $gpu['bridge_chip'] : '', // Include '- $gpu['bridge_chip']' if it exists
-            isset($gpu['guid']) ? ' - ' . $gpu['guid'] : '' // Include '- $gpu['guid']' if it exists
-        );
-        $gpuid = $gpu['id'];
-        $checked = in_array($gpuid, explode(',', $gpustat_cfg['MULTIGPU'])) ? " checked" : "";
-        echo "<li><input type='checkbox' name='MULTIGPU[]' value='$gpuid'$checked> $gpudesc</li>";
-    }
-}
-?>
-</ul>
-<br>
 
 Temperature Format:
 : <select id="TEMPFORMAT" name="TEMPFORMAT" size="1">
@@ -208,8 +170,8 @@ UI Automatic Refresh / Interval (Milliseconds):
 <br>
 
 <h4><b>Settings</b></h4>
-<?php
 
+<?php
 function processGPUPoolData($gpustat_pool, $partialExcludeKeys) {
     $newData = array();
 
@@ -247,43 +209,59 @@ $partialExcludeKeys = array(
 // Build settings needed for each GPU
 $processedGPUPoolData = processGPUPoolData($gpustat_pool, $partialExcludeKeys);
 
-foreach ($multigpus as $gpu) {
-    $gpumodel = $gpu['model'];
-    //$gpuid = $gpu['id'];
-    $gpuid = str_replace(".", "_", $gpu['id']); // Replace period with underscore in GPU ID PHP issue
-    echo '<li class="section">';
-    echo '<label class="section-label">Settings for GPU ' . $gpumodel . '</label>';
-    echo '<ul class="setting-list">';
+if (isset($gpustat_data)) {
+     foreach ($gpustat_data as $gpufresh) {
+        $gpumodel_fresh = $gpufresh['model'];
+        $gpuid_fresh = $gpufresh['id'];
+        $gpudesc = sprintf(
+            '%s: %s%s%s',
+            $gpuid_fresh,
+            $gpumodel_fresh,
+            isset($gpufresh['bridge_chip']) ? ' - ' . $gpufresh['bridge_chip'] : '', // Include '- $gpu['bridge_chip']' if it exists
+            isset($gpufresh['guid']) ? ' - ' . $gpufresh['guid'] : '' // Include '- $gpu['guid']' if it exists
+        );
+        echo '<li class="section">';
+        echo '<input type="checkbox" name="MULTIGPU[]" value="' . $gpuid_fresh . '" ';
+        $checked = in_array($gpuid_fresh, explode(',', $gpustat_cfg['MULTIGPU'])) ? "checked" : "";
+        echo $checked . '>'; // Place the checkbox here
 
-    // Filter the settings array based on the keys present in $processedGPUPoolData
-    $filteredSettings = [];
-    foreach ($processedGPUPoolData[$gpu['id']] as $key => $value) {
-        if (isset($settings[$key])) {
-            $filteredSettings[$key] = $settings[$key];
-        }
-    }
+        echo '<label class="section-label">' . $gpudesc . '</label>';
+        if ($checked) {
+            $gpu = $multigpus[$gpuid_fresh];
+            $gpuid = str_replace(".", "_", $gpu['id']); // Replace period with underscore in GPU ID PHP issue
+            echo '<ul class="setting-list">';
 
-    foreach ($filteredSettings as $key => $label) {
-        echo '<li>';
-        if (is_array($label)) {
-            $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
-            echo '<label>' . $label['name'] . '</label>';
-            echo '<select name="' . $settingNameWithGPU . '">';
-            foreach ($label['options'] as $optionValue => $optionLabel) {
-                $selected = ($gpu['stats'][$key] == $optionValue) ? 'selected' : '';
-                echo '<option value="' . $optionValue . '" ' . $selected . '>' . $optionLabel . '</option>';
+            // Filter the settings array based on the keys present in $processedGPUPoolData
+            $filteredSettings = [];
+            foreach ($processedGPUPoolData[$gpu['id']] as $key => $value) {
+                if (isset($settings[$key])) {
+                    $filteredSettings[$key] = $settings[$key];
+                }
             }
-            echo '</select>';
-        } else {
-            $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
-            $isChecked = ($gpu['stats'][$key] == 1) ? 'checked' : '';
-            echo '<input type="hidden" name="' . $settingNameWithGPU . '" value="0">';
-            echo '<input type="checkbox" name="' . $settingNameWithGPU . '" value="1" ' . $isChecked . '>';
-            echo '<label>' . $label . '</label>';
+
+            foreach ($filteredSettings as $key => $label) {
+                echo '<li>';
+                if (is_array($label)) {
+                    $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
+                    echo '<label>' . $label['name'] . '</label>';
+                    echo '<select name="' . $settingNameWithGPU . '">';
+                    foreach ($label['options'] as $optionValue => $optionLabel) {
+                        $selected = ($gpu['stats'][$key] == $optionValue) ? 'selected' : '';
+                        echo '<option value="' . $optionValue . '" ' . $selected . '>' . $optionLabel . '</option>';
+                    }
+                    echo '</select>';
+                } else {
+                    $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
+                    $isChecked = (!isset($gpu['stats'][$key]) || $gpu['stats'][$key] == 1) ? 'checked' : ''; // if not set defaults to true on all
+                    echo '<input type="hidden" name="' . $settingNameWithGPU . '" value="0">';
+                    echo '<input type="checkbox" name="' . $settingNameWithGPU . '" value="1" ' . $isChecked . '>';
+                    echo '<label>' . $label . '</label>';
+                }
+                echo '</li>';
+            }
+            echo '</ul>';
         }
-        echo '</li>';
     }
-    echo '</ul>';
     echo '</li>';
     // Display the GPU array for debugging
     // echo '<li>';
@@ -293,8 +271,8 @@ foreach ($multigpus as $gpu) {
     // echo '</pre>';
     // echo '</li>';
 }
-
 ?>
+
 <br>
 
 Debug:
