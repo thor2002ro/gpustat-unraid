@@ -18,18 +18,7 @@ if (!isset($gpustat_cfg)) {
     $gpustat_cfg = Main::getSettings();
 }
 
-// $gpustat_inventory should be set if called from settings page code
-if (isset($gpustat_inventory) && $gpustat_inventory) {
-    $gpustat_cfg['inventory'] = true;
-    // Settings page looks for $gpustat_data specifically -- inventory all supported GPU types
-    $inventory_nvidia = (new Nvidia($gpustat_cfg))->getInventorym();
-    $inventory_intel = (new Intel($gpustat_cfg))->getInventory();
-    $inventory_amd = (new AMD($gpustat_cfg))->getInventory();
-
-    $gpustat_data = array_merge($inventory_nvidia, $inventory_intel, $inventory_amd);
-} else {
-    $array = json_decode($_GET['gpus'], true);
-
+function fetchGPUStatistics($array) {
     $data = array();
     foreach ($array as $gpu) {
         $gpustat_cfg["VENDOR"] = $gpu['vendor'];
@@ -50,9 +39,28 @@ if (isset($gpustat_inventory) && $gpustat_inventory) {
         }
         $decode = json_decode($return, true);
         $decode["panel"] = $gpu['panel'];
-        $decode["stats"] = $gpu['stats']; //passtrough which stats to display from config
+        $decode["stats"] = $gpu['stats']; //passthrough which stats to display from config
         $data[$gpu["id"]] = $decode;
     }
+
+    return $data;
+}
+
+// $gpustat_inventory should be set if called from settings page code
+if (isset($gpustat_inventory) && $gpustat_inventory) {
+    $gpustat_cfg['inventory'] = true;
+    // Settings page looks for $gpustat_data specifically -- inventory all supported GPU types
+    $inventory_nvidia = (new Nvidia($gpustat_cfg))->getInventorym();
+    $inventory_intel = (new Intel($gpustat_cfg))->getInventory();
+    $inventory_amd = (new AMD($gpustat_cfg))->getInventory();
+
+    $gpustat_data = array_merge($inventory_nvidia, $inventory_intel, $inventory_amd);
+
+    $gpustat_pool = fetchGPUStatistics($gpustat_data); // get 1st pool stats for all the gpus
+} else {
+    $array = json_decode($_GET['gpus'], true);
+
+    $data = fetchGPUStatistics($array);
 
     $json = json_encode($data);
     header('Content-Type: application/json');
