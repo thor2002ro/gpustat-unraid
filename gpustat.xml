@@ -1,23 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Containers>
     <Plugin>True</Plugin>
-    <PluginURL>https://raw.githubusercontent.com/b3rs3rk/gpustat-unraid/master/gpustat.plg</PluginURL>
-    <PluginAuthor>b3rs3rk</PluginAuthor>
+    <PluginURL>https://raw.githubusercontent.com/thor2002ro/gpustat-unraid/master/gpustat.plg</PluginURL>
+    <PluginAuthor>thor2002ro</PluginAuthor>
     <Beta>False</Beta>
     <Category>Tools:System Drivers:</Category>
-    <Date>2020-03-08</Date>
-    <Name>GPU Statistics</Name>
+    <Date>2023-09-01</Date>
+    <Name>GPU Stats</Name>
     <Description>
         This plugin parses GPU statistic data from vendor specific utilities and displays a subset of them on the dashboard.
+
+        includes Intel GPU Top and RadeonTop latest versions
     </Description>
     <Requires>
-        **Nvidia Driver plugin** (nVidia Support) *or*
-        **Intel GPU TOP plugin** (Intel Support) *or*
-        **AMD Driver** and **RadeonTop plugins** (AMD Support)
+        **Nvidia Driver** (nVidia Support) *or*
+        **AMD Driver** (AMD Support)
     </Requires>
-    <MinVer>6.7.1</MinVer>
-    <Project>https://github.com/b3rs3rk/gpustat-unraid</Project>
+    <MinVer>6.12.3</MinVer>
+    <Project>https://github.com/thor2002ro/gpustat-unraid</Project>
     <Support>https://forums.unraid.net/topic/89453-plugin-gpu-statistics/</Support>
     <Icon>https://raw.githubusercontent.com/b3rs3rk/gpustat-unraid/master/src/gpustat/usr/local/emhttp/plugins/gpustat/images/gpustat.png</Icon>
-    <License>MIT License - Copyright 2020-2022 b3rs3rk</License>
+    <DonateText>If you wanna buy me a coffee.</DonateText>
+    <DonateLink>https://paypal.me/thor2002ro</DonateLink>
+    <DonateImage>https://www.paypalobjects.com/webstatic/en_US/btn/btn_donate_74x21.png</DonateImage>
 </Containers>
