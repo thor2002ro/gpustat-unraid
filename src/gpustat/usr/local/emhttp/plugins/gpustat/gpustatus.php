@@ -50,9 +50,10 @@ if (isset($gpustat_inventory) && $gpustat_inventory) {
         }
         $decode = json_decode($return, true);
         $decode["panel"] = $gpu['panel'];
+        $decode["stats"] = $gpu['stats']; //passtrough which stats to display from config
         $data[$gpu["id"]] = $decode;
     }
-    
+
     $json = json_encode($data);
     header('Content-Type: application/json');
     header('Content-Length: ' . ES . strlen($json));

@@ -145,18 +145,19 @@ var keyOrder = [
 var excludedKeys = [
     "max", "unit", "pcie", "driver", "bridge_bus",
     "passedthrough", "vendor", "name", "temp", "util",
-    "appssupp", "processes", "uuid", "sessions", "thrtlrsn", "panel"
+    "appssupp", "processes", "uuid", "sessions", "thrtlrsn", "panel", "stats"
 ];
 
 var additionalKeys = ["rxutil", "txutil", "encutil", "decutil"];
 
-const gpustat_dash_build = (_args) => {   
+const gpustat_dash_build = (_args) => {
     const target = "tblGPUDash";
 
-    $.getJSON('/plugins/gpustat/gpustatus.php?gpus=' + JSON.stringify(_args), (data2) => {
+    $.getJSON('/plugins/gpustat/gpustatus.php?gpus=' + JSON.stringify(_args), (data2) => {        
         if (data2) {
             $.each(data2, function (key2, data) {
                 let panel = data["panel"];
+                let stats = data["stats"];
                 let fragment = document.createDocumentFragment();
 
                 let gpu_data = new Set();
@@ -174,16 +175,23 @@ const gpustat_dash_build = (_args) => {
                         }
                     }
                 });
-                
+
                 // Convert sets to arrays for further processing if needed
                 let gpu_data_array = Array.from(gpu_data);
                 let gpu_data_nobars_array = Array.from(gpu_data_nobars);
- 
+
                 // Find missing and disabled keys                 
-                let disabled_array = keyOrder.filter(item => !gpu_data_array.includes(item));
+                let disabled_array = keyOrder
+                    .filter(item => !gpu_data_array.includes(item))
+                    .concat(
+                        Object.keys(stats)  //disable stats per gpu
+                            .filter(key => stats[key] == 0)
+                            .map(key => key.replace(/^DISP/, '').toLowerCase())
+                    );
+
                 let missing_array = gpu_data_array.filter(item => !keyOrder.includes(item));
                 let gpu_data_filtered = keyOrder.concat(missing_array).filter(item => !disabled_array.includes(item))
-                                                                      .filter(item => !gpu_data_nobars_array.includes(item));
+                    .filter(item => !gpu_data_nobars_array.includes(item));
 
                 let templateContent_bars = $('#message-template-bars').html();
                 for (let i = 0; i < gpu_data_filtered.length; i += 2) {

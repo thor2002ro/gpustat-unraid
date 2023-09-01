@@ -16,23 +16,23 @@ class AMD extends Main
 
     const STATISTICS_PARAM = '-d - -l 1';
     const STATISTICS_KEYMAP = [
-        'gpu'   => ['util'],
-        'ee'    => ['event'],
-        'vgt'   => ['vertex'],
-        'ta'    => ['texture'],
-        'sx'    => ['shaderexp'],
-        'sh'    => ['sequencer'],
-        'spi'   => ['shaderinter'],
-        'sc'    => ['scancon'],
-        'pa'    => ['primassem'],
-        'db'    => ['depthblk'],
-        'cb'    => ['colorblk'],
-        'uvd'   => ['uvd'],
-        'vce0'  => ['vce0'],
-        'vram'  => ['memusedutil', 'memused'],
-        'gtt'   => ['gttusedutil', 'gttused'],
-        'mclk'  => ['memclockutil', 'memclock', 'clocks'],
-        'sclk'  => ['clockutil', 'clock', 'clocks'],
+        'gpu' => ['util'],
+        'ee' => ['event'],
+        'vgt' => ['vertex'],
+        'ta' => ['texture'],
+        'sx' => ['shaderexp'],
+        'sh' => ['sequencer'],
+        'spi' => ['shaderinter'],
+        'sc' => ['scancon'],
+        'pa' => ['primassem'],
+        'db' => ['depthblk'],
+        'cb' => ['colorblk'],
+        'uvd' => ['uvd'],
+        'vce0' => ['vce0'],
+        'vram' => ['memusedutil', 'memused'],
+        'gtt' => ['gttusedutil', 'gttused'],
+        'mclk' => ['memclockutil', 'memclock', 'clocks'],
+        'sclk' => ['clockutil', 'clock', 'clocks'],
     ];
 
     const TEMP_UTILITY = 'sensors';
@@ -40,7 +40,7 @@ class AMD extends Main
 
     const LSPCI = 'lspci';
     const LSPCI_REGEX =
-    '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.*),\s[Width]*\s(?P<pcie_widthmax>.*),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.*)(\s(?P<pcie_downspeed>.*))?,\s[Width]*\s(?P<pcie_width>.*)(\s(?P<pcie_downwidth>.*))?\n.+Kernel driver in use:\s(?P<driver>.*)$/imU';
+        '/^.+LnkCap:\s.*?,\s[Speed]*\s(?P<pcie_speedmax>.*),\s[Width]*\s(?P<pcie_widthmax>.*),.*+\n.+LnkSta:\s[Speed]*\s(?P<pcie_speed>.*)(\s(?P<pcie_downspeed>.*))?,\s[Width]*\s(?P<pcie_width>.*)(\s(?P<pcie_downwidth>.*))?\n.+Kernel driver in use:\s(?P<driver>.*)$/imU';
 
     const LSPCI_REGEX2 = '/^.*-\[(?P<pcie1>.*)(?:-(?P<pcie2>.*))?\]-/imU';
 
@@ -71,14 +71,15 @@ class AMD extends Main
                     $this->inventory = $this->parseInventory(self::INVENTORY_REGEX);
                 }
                 if (!empty($this->inventory)) {
-                    foreach ($this->inventory AS $gpu) {
-                        if ($gpu['vendor'] != "Advanced Micro Devices, Inc. [AMD/ATI]") continue ;
+                    foreach ($this->inventory as $gpu) {
+                        if ($gpu['vendor'] != "Advanced Micro Devices, Inc. [AMD/ATI]")
+                            continue;
                         $result[$gpu['id']] = [
-                            'id'    => $gpu['id'],
+                            'id' => $gpu['id'],
                             'vendor' => 'amd',
                             'model' => (string) ($gpu['product'] ?? $gpu['model']),
-                            'guid'  => $gpu['busid'],
-                            'bridge_chip'   => ($this->getpciebridge($gpu['busid']))['bridge_chip'],
+                            'guid' => $gpu['busid'],
+                            'bridge_chip' => ($this->getpciebridge($gpu['busid']))['bridge_chip'],
                         ];
                     }
                 }
@@ -86,11 +87,11 @@ class AMD extends Main
         }
         if ($this->settings['UIDEBUG']) {
             $inventory["FAKE_amd"] = [
-                'vendor'        => 'amd',
-                'id'            => "FAKE_amd",
-                'model'         => 'Radeon RX 6800/6800 XT / 6900 XT',
-                'guid'          => 'FAKE_amd',
-                'bridge_chip'   => NULL,
+                'vendor' => 'amd',
+                'id' => "FAKE_amd",
+                'model' => 'Radeon RX 6800/6800 XT / 6900 XT',
+                'guid' => 'FAKE_amd',
+                'bridge_chip' => NULL,
             ];
             $result = array_merge($result, $inventory);
         }
@@ -104,23 +105,23 @@ class AMD extends Main
     public function getStatistics(array $gpu)
     {
 
-            if ($gpu['id'] === "FAKE_amd") {
-                $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
-            } else if ($this->cmdexists) {
+        if ($gpu['id'] === "FAKE_amd") {
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
+        } else if ($this->cmdexists) {
             //Command invokes radeontop in STDOUT mode with an update limit of half a second @ 120 samples per second
             $command = sprintf("%0s -b %1s", self::CMD_UTILITY, $gpu['id']);
             $this->runCommand($command, self::STATISTICS_PARAM, false);
-            }
-            if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                $this->parseStatistics($gpu);
-            } else {
-                $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
-            }
-            return json_encode($this->pageData) ;
-        
+        }
+        if (!empty($this->stdout) && strlen($this->stdout) > 0) {
+            $this->parseStatistics($gpu);
+        } else {
+            $this->pageData['error'][] += Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+        }
+        return json_encode($this->pageData);
+
     }
 
-     /**
+    /**
      * Retrieves AMD APU/GPU Temperature/Fan/Power/Voltage readings from lm-sensors
      * @returns array
      */
@@ -148,44 +149,41 @@ class AMD extends Main
 
             if (isset($data[$chip])) {
                 $data = $data[$chip];
-                if ($this->settings['DISPTEMP']) {
-                    if (isset($data['edge']['temp1_input'])) {
-                        $sensors['temp'] = $this->roundFloat($data['edge']['temp1_input']) . ' °' . $this->settings['TEMPFORMAT'];
-                        if (isset($data['edge']['temp1_crit'])) {
-                            $sensors['tempmax'] = $this->roundFloat($data['edge']['temp1_crit']);
-                        }
+                if (isset($data['edge']['temp1_input'])) {
+                    $sensors['temp'] = $this->roundFloat($data['edge']['temp1_input']) . ' °' . $this->settings['TEMPFORMAT'];
+                    if (isset($data['edge']['temp1_crit'])) {
+                        $sensors['tempmax'] = $this->roundFloat($data['edge']['temp1_crit']);
                     }
                 }
-                if ($this->settings['DISPFAN']) {
-                    if (isset($data['fan1']['fan1_input'])) {
-                        $sensors['fan'] = $this->roundFloat($data['fan1']['fan1_input']);
-                        if (isset($data['fan1']['fan1_max'])) {
-                            $sensors['fanmax'] = $this->roundFloat($data['fan1']['fan1_max']);
-                        }
+
+                if (isset($data['fan1']['fan1_input'])) {
+                    $sensors['fan'] = $this->roundFloat($data['fan1']['fan1_input']);
+                    if (isset($data['fan1']['fan1_max'])) {
+                        $sensors['fanmax'] = $this->roundFloat($data['fan1']['fan1_max']);
                     }
                 }
-                if ($this->settings['DISPPWRDRAW']) {
-                    if (isset($data['power1']['power1_average'])) {
-                        $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
-                        if (isset($data['power1']['power1_cap'])) {
-                            $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
-                        }
-                    } else if (isset($data['PPT']['power1_average'])) {
-                        $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
-                        if (isset($data['PPT']['power1_cap'])) {
-                            $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
-                        }
+
+                if (isset($data['power1']['power1_average'])) {
+                    $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
+                    if (isset($data['power1']['power1_cap'])) {
+                        $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
                     }
-                    if (isset($data['vddgfx']['in0_input'])) {
-                        $sensors['voltage'] = $this->roundFloat($data['vddgfx']['in0_input'], 2);
+                } else if (isset($data['PPT']['power1_average'])) {
+                    $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
+                    if (isset($data['PPT']['power1_cap'])) {
+                        $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
                     }
+                }
+
+                if (isset($data['vddgfx']['in0_input'])) {
+                    $sensors['voltage'] = $this->roundFloat($data['vddgfx']['in0_input'], 2);
                 }
             }
         }
         return $sensors;
     }
 
-        /**
+    /**
      * Retrieves pcie and driver from lspci and returns an array
      *
      * @return array
@@ -216,10 +214,10 @@ class AMD extends Main
                 if (!empty($this->lspci_bridge)) {
                     foreach ($this->lspci_bridge as $br) {
                         $bridge = [
-                            'pcie_speedmax'     => $br['pcie_speedmax'],
-                            'pcie_widthmax'     => $br['pcie_widthmax'],
-                            'pcie_speed'        => $br['pcie_speed'],
-                            'pcie_width'        => $br['pcie_width'],
+                            'pcie_speedmax' => $br['pcie_speedmax'],
+                            'pcie_widthmax' => $br['pcie_widthmax'],
+                            'pcie_speed' => $br['pcie_speed'],
+                            'pcie_width' => $br['pcie_width'],
                         ];
                     }
                 }
@@ -229,13 +227,13 @@ class AMD extends Main
         if (!empty($this->lspci_gpu)) {
             foreach ($this->lspci_gpu as $gpu) {
                 $result = [
-                    'pciegenmax'        => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speedmax']) ? $bridge['pcie_speedmax'] : $gpu['pcie_speedmax'])),
-                    'pciewidthmax'      => (isset($bridge['pcie_widthmax']) ? $bridge['pcie_widthmax'] : $gpu['pcie_widthmax']),
-                    'pciegen'           => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speed']) ? $bridge['pcie_speed'] : $gpu['pcie_speed'])),
-                    'pciewidth'         => (isset($bridge['pcie_width']) ? $bridge['pcie_width'] : $gpu['pcie_width']),
-                    'driver'            => $gpu['driver'],
-                    'passedthrough'     => ($gpu['driver'] == 'vfio-pci' ? "Passthrough" : "Normal"),
-                    'bridge_bus'        => $bridgebus,
+                    'pciegenmax' => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speedmax']) ? $bridge['pcie_speedmax'] : $gpu['pcie_speedmax'])),
+                    'pciewidthmax' => (isset($bridge['pcie_widthmax']) ? $bridge['pcie_widthmax'] : $gpu['pcie_widthmax']),
+                    'pciegen' => (int) $this->prasePCIEgen(floatval(isset($bridge['pcie_speed']) ? $bridge['pcie_speed'] : $gpu['pcie_speed'])),
+                    'pciewidth' => (isset($bridge['pcie_width']) ? $bridge['pcie_width'] : $gpu['pcie_width']),
+                    'driver' => $gpu['driver'],
+                    'passedthrough' => ($gpu['driver'] == 'vfio-pci' ? "Passthrough" : "Normal"),
+                    'bridge_bus' => $bridgebus,
                 ];
             }
         }
@@ -255,9 +253,9 @@ class AMD extends Main
                 if (!empty($this->lspci_bridge)) {
                     foreach ($this->lspci_bridge as $bridge) {
                         $result = [
-                            'pcie1'             => $bridge['pcie1'],
-                            'pcie2'             => (isset($bridge['pcie2']) ? $bridge['pcie2'] : $bridge['pcie1']),
-                            'bridge_chip'       => (isset($bridge['pcie2']) ? $bridge['pcie1'] : NULL),
+                            'pcie1' => $bridge['pcie1'],
+                            'pcie2' => (isset($bridge['pcie2']) ? $bridge['pcie2'] : $bridge['pcie1']),
+                            'bridge_chip' => (isset($bridge['pcie2']) ? $bridge['pcie1'] : NULL),
                         ];
                     }
                 }
@@ -272,29 +270,29 @@ class AMD extends Main
     private function parseStatistics($gpu)
     {
         $this->pageData += [
-            'vendor'        => 'AMD',
-            'name'          => $gpu['model'],
-            'event'         => 'N/A',
-            'vertex'        => 'N/A',
-            'texture'       => 'N/A',
-            'shaderexp'     => 'N/A',
-            'sequencer'     => 'N/A',
-            'shaderinter'   => 'N/A',
-            'scancon'       => 'N/A',
-            'primassem'     => 'N/A',
-            'depthblk'      => 'N/A',
-            'colorblk'      => 'N/A',
-            'perfstate'     => 'N/A',
-            'throttled'     => 'N/A',
-            'thrtlrsn'      => 'N/A',
-            'util'          => 'N/A',
+            'vendor' => 'AMD',
+            'name' => $gpu['model'],
+            'event' => 'N/A',
+            'vertex' => 'N/A',
+            'texture' => 'N/A',
+            'shaderexp' => 'N/A',
+            'sequencer' => 'N/A',
+            'shaderinter' => 'N/A',
+            'scancon' => 'N/A',
+            'primassem' => 'N/A',
+            'depthblk' => 'N/A',
+            'colorblk' => 'N/A',
+            'perfstate' => 'N/A',
+            'throttled' => 'N/A',
+            'thrtlrsn' => 'N/A',
+            'util' => 'N/A',
         ];
 
         $this->pageData += [
-            'powerunit'     => 'W',
-            'fanunit'       => 'RPM',
-            'voltageunit'   => 'V',
-            'tempunit'      => $this->settings['TEMPFORMAT'],
+            'powerunit' => 'W',
+            'fanunit' => 'RPM',
+            'voltageunit' => 'V',
+            'tempunit' => $this->settings['TEMPFORMAT'],
         ];
 
         // radeontop data doesn't follow a standard object format -- need to parse CSV and then explode by spaces
@@ -307,28 +305,28 @@ class AMD extends Main
                 if (isset(self::STATISTICS_KEYMAP[$fields[0]])) {
                     $values = self::STATISTICS_KEYMAP[$fields[0]];
 
-                    if ($this->settings['DISP' . strtoupper($values[0])] || $this->settings['DISP' . strtoupper($values[2])]) {
-                        $fields[1] = str_replace(PHP_EOL, '', $fields[1]);
-                        $fields1_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i', $fields[1]);
-                        $this->pageData[$values[0]] = $fields1_clean[0];
-                        if (isset($fields1_clean[1])) {
-                            $this->pageData[$values[0] . 'unit'] = $fields1_clean[1];
+                    $fields[1] = str_replace(PHP_EOL, '', $fields[1]);
+                    $fields1_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i', $fields[1]);
+                    $this->pageData[$values[0]] = $fields1_clean[0];
+                    if (isset($fields1_clean[1])) {
+                        $this->pageData[$values[0] . 'unit'] = $fields1_clean[1];
+                    }
+                    if (isset($fields[2])) {
+                        $fields[2] = str_replace(PHP_EOL, '', $fields[2]);
+                        $fields2_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i', $fields[2]);
+                        $this->pageData[$values[1]] = $fields2_clean[0];
+                        if (isset($fields2_clean[1])) {
+                            $this->pageData[$values[1] . 'unit'] = $fields2_clean[1];
                         }
-                        if (isset($fields[2])) {
-                            $fields[2] = str_replace(PHP_EOL, '', $fields[2]);
-                            $fields2_clean = preg_split('/(?<=[0-9])(?=[a-z]+)/i', $fields[2]);
-                            $this->pageData[$values[1]] = $fields2_clean[0];
-                            if (isset($fields2_clean[1])) {
-                                $this->pageData[$values[1] . 'unit'] = $fields2_clean[1];
-                            }
-                        }
+                    }
 
-                        if (($fields[0] == 'vram') || ($fields[0] == 'gtt') ||
-                            ($fields[0] == 'mclk') || ($fields[0] == 'sclk')
-                        ) {
-                            $this->pageData[$values[1] . 'max'] = $this->roundFloat(floatval((($fields2_clean[0]) * 100 / ($fields1_clean[0]))), 2);
-                        }
-                    } elseif ($fields[0] == 'gpu') {
+                    if (
+                        ($fields[0] == 'vram') || ($fields[0] == 'gtt') ||
+                        ($fields[0] == 'mclk') || ($fields[0] == 'sclk')
+                    ) {
+                        $this->pageData[$values[1] . 'max'] = $this->roundFloat(floatval((($fields2_clean[0]) * 100 / ($fields1_clean[0]))), 2);
+                    }
+                    if ($fields[0] == 'gpu') {
                         // GPU Load doesn't have a setting, for now just pass the check
                         $this->pageData[$values[0]] = $this->roundFloat(floatval($fields[1]), 1) . '%';
                     }
@@ -340,7 +338,7 @@ class AMD extends Main
         }
 
         $this->pageData = array_merge($this->pageData, $this->getSensorData($gpu['guid']));
-        $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));   
-         
+        $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));
+
     }
 }

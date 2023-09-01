@@ -93,7 +93,7 @@ function save_cfg($val, $gpus, $settings) {
         foreach ($settings as $section => $sectionSettings) {
             foreach ($sectionSettings as $label => $settingData) {
                 if (is_array($settingData)) {
-                    $settingNameWithGPU = $settingData['name'] . '_' . $gpuid . '_SEL'; // Append GPU ID to the setting name
+                    $settingNameWithGPU = $settingData['name'] . '_' . $gpuid; // Append GPU ID to the setting name
                     $selectedOption = $val[$settingNameWithGPU];
                     $json_array[$gpupciid]['stats'][$settingData['name']] = $selectedOption;
                 } else {
@@ -216,9 +216,9 @@ foreach ($multigpus as $gpu) {
         foreach ($sectionSettings as $label => $settingData) {
             echo '<li>';
             if (is_array($settingData)) {
-                $settingNameWithGPU = $settingData['name'] . '_' . $gpuid . '_SEL'; // Append GPU ID to the setting name
+                $settingNameWithGPU = $settingData['name'] . '_' . $gpuid; // Append GPU ID to the setting name
                 echo '<label>' . $label . '</label>';
-                echo '<select name="' . $settingNameWithGPU . '_SEL">';
+                echo '<select name="' . $settingNameWithGPU . '">';
                 foreach ($settingData['options'] as $optionValue => $optionLabel) {
                     $selected = ($gpu['stats'][$settingData['name']] == $optionValue) ? 'selected' : '';
                     echo '<option value="' . $optionValue . '" ' . $selected . '>' . $optionLabel . '</option>';
