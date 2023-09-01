@@ -38,8 +38,8 @@ function fetchGPUStatistics($array) {
                 print_r(Error::get(Error::CONFIG_SETTINGS_NOT_VALID));
         }
         $decode = json_decode($return, true);
-        $decode["panel"] = $gpu['panel'];
-        $decode["stats"] = $gpu['stats']; //passthrough which stats to display from config
+        isset($gpu['panel']) ? $decode["panel"] = $gpu['panel'] : '';
+        isset($gpu['stats']) ? $decode["stats"] = $gpu['stats'] : ''; //passthrough which stats to display from config
         $data[$gpu["id"]] = $decode;
     }
 
