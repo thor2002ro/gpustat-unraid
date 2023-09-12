@@ -163,13 +163,15 @@ class AMD extends Main
                     }
                 }
 
-                if (isset($data['power1']['power1_average'])) {
-                    $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
-                    if (isset($data['power1']['power1_cap'])) {
-                        $sensors['powermax'] = $this->roundFloat($data['power1']['power1_cap'], 1);
+                if (isset($data['power1']['power1_average']) || isset($data['PPT']['power1_average']) || isset($data['PPT']['power1_input'])) {
+                    if (isset($data['power1']['power1_average'])) {
+                        $sensors['power'] = $this->roundFloat($data['power1']['power1_average'], 1);
+                    } elseif (isset($data['PPT']['power1_average'])) {
+                        $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
+                    } elseif (isset($data['PPT']['power1_input'])) {
+                        $sensors['power'] = $this->roundFloat($data['PPT']['power1_input'], 1);
                     }
-                } else if (isset($data['PPT']['power1_average'])) {
-                    $sensors['power'] = $this->roundFloat($data['PPT']['power1_average'], 1);
+                
                     if (isset($data['PPT']['power1_cap'])) {
                         $sensors['powermax'] = $this->roundFloat($data['PPT']['power1_cap'], 1);
                     }
