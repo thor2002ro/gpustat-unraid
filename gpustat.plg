@@ -35,6 +35,11 @@
     <URL>&pkgURL;/radeontop-&version;.tgz</URL>
 </FILE>
 
+<!-- try to install utils -->
+<FILE Name="&plgPATH;/nvtop-&version;.tgz" Min="6.10" Run="upgradepkg --install-new">
+    <URL>&pkgURL;/nvtop-&version;.tgz</URL>
+</FILE>
+
  <!-- The 'pre-install' script. -->
 <FILE Run="/bin/bash">
 <INLINE>
@@ -55,6 +60,12 @@ elif [ "$(which radeontop 2>/dev/null)" ]; then
     echo "********************************************************************"
     echo
     echo "AMD vendor utility found. Continuing install."
+    echo
+    echo "********************************************************************"
+elif [ "$(which nvtop 2>/dev/null)" ]; then
+    echo "********************************************************************"
+    echo
+    echo "NVTOP utility found. Continuing install."
     echo
     echo "********************************************************************"
 else
@@ -83,48 +94,7 @@ chmod -R 777 /dev/dri
 </INLINE>
 </FILE>
 
- <!-- Install default plugin cfg  -->
- <FILE Name="/boot/config/plugins/gpustat/gpustat.cfg">
-  <INLINE>
-   <![CDATA[
-    VENDOR1=""
-    VENDOR2=""
-    VENDOR3=""
-    GPU1=""
-    GPU2=""
-    GPU3=""
-    TEMPFORMAT="C"
-    DISPCLOCKS="1"
-    DISPENCDEC="1"
-    DISPTEMP="1"
-    DISPFAN="1"
-    DISPPCIUTIL="1"
-    DISPPWRDRAW="1"
-    DISPPWRSTATE="1"
-    DISPTHROTTLE="1"
-    DISPSESSIONS="1"
-    UIREFRESH="1"
-    UIREFRESHINT="6000"
-    DISPMEMUTIL="1"
-    DISP3DRENDER="1"
-    DISPBLITTER="1"
-    DISPVIDEO="1"
-    DISPVIDENH="1"
-    DISPINTERRUPT="1"
-    DISPEVENT="1"
-    DISPVERTEX="1"
-    DISPTEXTURE="1"
-    DISPSHADEREXP="1"
-    DISPSEQUENCER="1"
-    DISPSHADERINTER="1"
-    DISPSCANCON="1"
-    DISPPRIMASSEM="1"
-    DISPDEPTHBLK="1"
-    DISPCOLORBLK="1"
-    DISPGFXTRANS="1"
-   ]]>
-  </INLINE>
- </FILE>
+
 
   <!-- The 'remove' script. -->
   <FILE Run="/bin/bash" Method="remove">

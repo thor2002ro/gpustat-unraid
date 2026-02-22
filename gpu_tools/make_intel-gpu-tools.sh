@@ -7,6 +7,7 @@ cd "$START"
 PKG="igt-gpu-tools"
 PKG_DIR=""$PKG"_pkg"
 GIT_DIR="$PKG"
+OUT_DIR="PKGS"
 FLAGS="-O2 -fPIC"
 
 LIBDIRSUFFIX="64"
@@ -14,6 +15,7 @@ LIBDIRSUFFIX="64"
 rm -rf "$PKG_DIR"
 rm -rf "$GIT_DIR"
 
+mkdir -p "$OUT_DIR"
 mkdir -p "$PKG_DIR"
 
 #GIT
@@ -48,7 +50,7 @@ cd "$START/$PKG_DIR"
 #remove man
 rm -r "usr/man"
 
-fakeroot "$START"/../makepkg -l n -c y "$START/../pkg/$PKG"-$(date +"%Y.%m.%d")-x86_64-thor.tgz
+"$START"/makepkg -l n -c y "$START/$OUT_DIR/$GIT_DIR"-$(date +'%Y%m%d')-x86_64-thor.tgz
 
 cd "$START"
 

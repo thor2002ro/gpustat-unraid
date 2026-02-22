@@ -15,8 +15,9 @@ An UnRAID plugin for displaying GPU status
 #### AMD:
 - UnRAID (6.9+)
   * RadeonTop
+  * NVTop
 
-Note: From an UnRAID console if `nvidia-smi` (NVIDIA), `intel_gpu_top` (Intel) or `radeontop` (AMD) cannot be found or run for any reason,
+Note: From an UnRAID console if `nvidia-smi` (NVIDIA), `intel_gpu_top` (Intel), `radeontop` (AMD), or `nvtop` (Any) cannot be found or run for any reason,
 the plugin will fail for that vendor. If none of these commands exists, the plugin install will fail.
 
 ## Manual Installation

@@ -10,7 +10,7 @@
     <Description>
         This plugin parses GPU statistic data from vendor specific utilities and displays a subset of them on the dashboard.
 
-        includes Intel GPU Top and RadeonTop latest versions
+        includes Intel GPU Top, RadeonTop, and NVTop latest versions
     </Description>
     <Requires>
         **Nvidia Driver** (nVidia Support) *or*

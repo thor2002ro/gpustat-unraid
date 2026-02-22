@@ -19,6 +19,7 @@ cd "$START/src/$PLUGIN"
 cd "$START/gpu_tools"
 ./make_intel-gpu-tools.sh
 ./make_radeontop_pkg.sh
+./make_nvtop_pkg.sh
 cd "$START"
 
 function md5_dir {
