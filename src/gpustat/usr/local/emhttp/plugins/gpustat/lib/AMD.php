@@ -2,10 +2,30 @@
 
 namespace gpustat\lib;
 
-// AMD GPU statistics — uses radeontop (utilization), sensors (temp/fan/power), lspci (PCIe/inventory)
+// AMD GPU statistics — uses radeontop or nvtop (utilization), sensors (temp/fan/power), lspci (PCIe/inventory)
 class AMD extends Main
 {
-    const CMD_UTILITY = 'radeontop'; // GPU utilization metrics
+    const RADEONTOP_UTILITY = 'radeontop'; // Default utilization tool
+    const NVTOP_UTILITY = 'nvtop'; // Alternative: comprehensive JSON output
+    const NVTOP_PARAM = '-s'; // nvtop snapshot mode
+
+    // Supported apps for process detection (nvtop path only, same list as Nvidia)
+    const SUPPORTED_APPS = [
+        'plex' => ['Plex Transcoder'],
+        'jellyfin' => ['jellyfin-ffmpeg'],
+        'handbrake' => ['/usr/bin/HandBrakeCLI'],
+        'emby' => ['emby'],
+        'tdarr' => ['ffmpeg', 'HandbrakeCLI'],
+        'unmanic' => ['ffmpeg'],
+        'dizquetv' => ['ffmpeg'],
+        'ersatztv' => ['ffmpeg'],
+        'fileflows' => ['ffmpeg'],
+        'frigate' => ['ffmpeg'],
+        'deepstack' => ['python3'],
+        'nsfminer' => ['nsfminer'],
+        'shinobipro' => ['shinobi'],
+        'foldinghome' => ['FahCore'],
+    ];
     const INVENTORY_UTILITY = 'lspci'; // GPU detection
     const INVENTORY_PARAM = ' -mm | grep VGA';
     const INVENTORY_REGEX =
@@ -49,7 +69,9 @@ class AMD extends Main
      */
     public function __construct(array $settings = [])
     {
-        $settings += ['cmd' => self::CMD_UTILITY];
+        // Pick utility based on AMDUTILITY config (radeontop or nvtop)
+        $utility = strtolower($settings['AMDUTILITY'] ?? 'radeontop');
+        $settings += ['cmd' => ($utility === 'nvtop') ?self::NVTOP_UTILITY : self::RADEONTOP_UTILITY];
         parent::__construct($settings);
     }
 
@@ -93,22 +115,43 @@ class AMD extends Main
         return $result;
     }
 
-    // Get live stats: radeontop → sensors → lspci PCIe data
+    // Get live stats: radeontop or nvtop → sensors → lspci PCIe data
     public function getStatistics(array $gpu): string
     {
-        if ($gpu['id'] === 'FAKE_amd') {
-            $this->stdout = (string)file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
-        }
-        elseif ($this->cmdexists) {
-            $command = sprintf('%s -b %s', self::CMD_UTILITY, $gpu['id']);
-            $this->runCommand($command, self::STATISTICS_PARAM, false);
-        }
+        $useNvtop = strtolower($this->settings['AMDUTILITY'] ?? 'radeontop') === 'nvtop';
 
-        if (!empty($this->stdout)) {
-            $this->parseStatistics($gpu);
+        if ($useNvtop) {
+            // nvtop path: single JSON call for all metrics
+            if ($gpu['id'] === 'FAKE_amd') {
+                $this->stdout = (string)file_get_contents(__DIR__ . '/../sample/amd-nvtop-stdout.txt');
+            }
+            elseif ($this->cmdexists) {
+                $this->runCommand(self::NVTOP_UTILITY, self::NVTOP_PARAM, false);
+            }
+
+            if (!empty($this->stdout)) {
+                $this->parseStatisticsNvtop($gpu);
+            }
+            else {
+                $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            }
         }
         else {
-            $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            // radeontop path: original behavior
+            if ($gpu['id'] === 'FAKE_amd') {
+                $this->stdout = (string)file_get_contents(__DIR__ . '/../sample/amd-radeontop-stdout.txt');
+            }
+            elseif ($this->cmdexists) {
+                $command = sprintf('%s -b %s', self::RADEONTOP_UTILITY, $gpu['id']);
+                $this->runCommand($command, self::STATISTICS_PARAM, false);
+            }
+
+            if (!empty($this->stdout)) {
+                $this->parseStatistics($gpu);
+            }
+            else {
+                $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            }
         }
 
         return json_encode($this->pageData);
@@ -256,6 +299,175 @@ class AMD extends Main
         }
 
         return $result;
+    }
+
+    // Parse nvtop JSON output into pageData, then merge sensors + lspci
+    private function parseStatisticsNvtop(array $gpu): void
+    {
+        $allGpus = json_decode($this->stdout, true);
+        if (!is_array($allGpus)) {
+            $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            return;
+        }
+
+        // Match by PCI bus ID: nvtop uses "0000:0c:00.0", inventory has "0c:00.0"
+        $gpuData = null;
+        foreach ($allGpus as $entry) {
+            $shortPci = preg_replace('/^[0-9a-f]{4}:/i', '', $entry['pci'] ?? '');
+            if (strcasecmp($shortPci, $gpu['id']) === 0) {
+                $gpuData = $entry;
+                break;
+            }
+        }
+        // Fallback: use first GPU if only one in output
+        if ($gpuData === null) {
+            $gpuData = count($allGpus) === 1 ? $allGpus[0] : null;
+        }
+        if ($gpuData === null) {
+            $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            return;
+        }
+
+        // Helper: strip unit suffix from value strings like "500MHz", "42C", "8W", "0%"
+        $stripUnit = function ($val) {
+            if ($val === null)
+                return null;
+            return preg_replace('/[^0-9.\-]/', '', (string)$val);
+        };
+
+        // Temperature: nvtop always reports Celsius — convert if needed
+        $tempUnit = $this->settings['TEMPFORMAT'] ?? 'C';
+        $tempRaw = (float)$stripUnit($gpuData['temp'] ?? null);
+        if ($tempUnit === 'F') {
+            $tempRaw = self::convertCelsius((int)$tempRaw);
+        }
+        $tempMax = (float)$stripUnit($gpuData['temp_slowdown_threshold'] ?? null);
+        if ($tempUnit === 'F' && $tempMax > 0) {
+            $tempMax = self::convertCelsius((int)$tempMax);
+        }
+
+        // Parse memory values ("256.00 MiB" → 256.0)
+        $memUsed = (float)$stripUnit(explode(' ', $gpuData['mem_used'] ?? '0')[0]);
+        $memTotal = (float)$stripUnit(explode(' ', $gpuData['mem_total'] ?? '0')[0]);
+
+        // array_merge (not +=) so we overwrite the N/A defaults from Main::__construct()
+        $this->pageData = array_merge($this->pageData, [
+            'vendor' => 'AMD',
+            'name' => $gpuData['device_name'] ?? $gpu['model'] ?? 'Unknown',
+            'util' => $gpuData['gpu_util'] ?? 'N/A',
+            'clock' => (float)$stripUnit($gpuData['gpu_clock'] ?? null),
+            'clockmax' => (float)$stripUnit($gpuData['gpu_clock_max'] ?? null),
+            'clockunit' => 'MHz',
+            'memclock' => (float)$stripUnit($gpuData['mem_clock'] ?? null),
+            'memclockmax' => (float)$stripUnit($gpuData['mem_clock_max'] ?? null),
+            'memclockunit' => 'MHz',
+            'temp' => $this->roundFloat($tempRaw) . ' °' . $tempUnit,
+            'tempmax' => $this->roundFloat($tempMax),
+            'tempunit' => $tempUnit,
+            'fan' => $gpuData['fan_speed'] ?? 'N/A',
+            'fanunit' => '%',
+            'power' => (float)$stripUnit($gpuData['power_draw'] ?? null),
+            'powermax' => (float)$stripUnit($gpuData['power_draw_max'] ?? null),
+            'powerunit' => 'W',
+            'memused' => $this->roundFloat($memUsed, 1),
+            'memusedmax' => $this->roundFloat($memTotal, 1),
+            'memusedunit' => 'MiB',
+            'memusedutil' => $gpuData['mem_util'] ?? 'N/A',
+            'pciegen' => (int)($gpuData['pcie_link_gen'] ?? 0),
+            'pciegenmax' => (int)($gpuData['max_pcie_gen'] ?? 0),
+            'pciewidth' => 'x' . (int)($gpuData['pcie_link_width'] ?? 0),
+            'pciewidthmax' => 'x' . (int)($gpuData['max_pcie_link_width'] ?? 0),
+            'voltageunit' => 'V',
+        ]);
+
+        // Encode/decode — nvtop uses either shared "encode_decode" or separate fields
+        if (isset($gpuData['encode_decode'])) {
+            $this->pageData['encutil'] = $gpuData['encode_decode'];
+            $this->pageData['decutil'] = $gpuData['encode_decode'];
+        }
+        else {
+            if (isset($gpuData['encode']))
+                $this->pageData['encutil'] = $gpuData['encode'];
+            if (isset($gpuData['decode']))
+                $this->pageData['decutil'] = $gpuData['decode'];
+        }
+
+        // PCIe rx/tx (bytes/sec) — only present on some GPUs
+        if (isset($gpuData['pcie_rx']))
+            $this->pageData['rxutil'] = $gpuData['pcie_rx'];
+        if (isset($gpuData['pcie_tx']))
+            $this->pageData['txutil'] = $gpuData['pcie_tx'];
+
+        // Process detection
+        foreach (self::SUPPORTED_APPS as $app => $cmds) {
+            $this->pageData['processes'][($app . 'using')] = false;
+            $this->pageData['processes'][($app . 'mem')] = 0;
+            $this->pageData['processes'][($app . 'count')] = 0;
+        }
+        $this->pageData['appssupp'] = array_keys(self::SUPPORTED_APPS);
+        $this->pageData['sessions'] = 0;
+
+        if (isset($gpuData['processes']) && is_array($gpuData['processes'])) {
+            $this->pageData['sessions'] = count($gpuData['processes']);
+            if ($gpu['id'] === 'FAKE_amd') {
+                foreach (self::SUPPORTED_APPS as $app => $cmds) {
+                    $this->pageData['processes'][($app . 'using')] = true;
+                    $this->pageData['processes'][($app . 'mem')] = 25;
+                    $this->pageData['processes'][($app . 'count')] = 2;
+                }
+            }
+            else {
+                foreach ($gpuData['processes'] as $proc) {
+                    if (isset($proc['cmdline'])) {
+                        $pid = (int)($proc['pid'] ?? 0);
+                        $memMB = (int)round((float)$stripUnit($proc['gpu_mem_bytes_alloc'] ?? '0'));
+                        $this->detectApplication($pid, (string)$proc['cmdline'], $memMB);
+                    }
+                }
+            }
+        }
+
+        unset($this->stdout);
+
+        // Merge sensors (voltage) and lspci (driver, bridge chip, passthrough)
+        $this->pageData = array_merge($this->pageData, $this->getSensorData($gpu['guid']));
+        $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));
+    }
+
+    /**
+     * Match a process against SUPPORTED_APPS by its command line.
+     * Uses /proc to resolve ambiguous binaries (ffmpeg, python3, etc.)
+     */
+    private function detectApplication(int $pid, string $processName, int $usedMemory): void
+    {
+        foreach (self::SUPPORTED_APPS as $app => $commands) {
+            foreach ($commands as $command) {
+                if (strpos($processName, $command) !== false) {
+                    if (in_array($command, ['ffmpeg', 'HandbrakeCLI', 'python3'])) {
+                        if ($pid > 0) {
+                            $pid_info = $this->getFullCommand($pid);
+                            if (!empty($pid_info)) {
+                                if ($command === 'python3') {
+                                    if (strpos($pid_info, '/app/intelligencelayer/shared') === false) {
+                                        continue 2;
+                                    }
+                                }
+                                elseif (stripos($pid_info, $app) === false) {
+                                    $ppid_info = $this->getParentCommand($pid);
+                                    if (stripos($ppid_info, $app) === false) {
+                                        continue 2;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $this->pageData['processes'][($app . 'using')] = true;
+                    $this->pageData['processes'][($app . 'mem')] += $usedMemory;
+                    $this->pageData['processes'][($app . 'count')]++;
+                    break 2;
+                }
+            }
+        }
     }
 
     // Parse radeontop output into pageData, then merge sensor + PCIe data

@@ -5,50 +5,49 @@ Title="GPU Statistics"
 
 
 <?php
-// Define settings for GPU metrics
+// Settings labels — keys match DISP + strtoupper(pageData key).
+// Only metrics with a matching entry here AND real data will show as checkboxes.
 $settings = array(
-    // Common settings
-    "DISPCLOCKS" => "GPU and Memory Clocks",
-    "DISPPCIUTIL" => "PCI/IMC Utilization",
-    "DISPPWRDRAW" => array(
-        "name" => "Power Draw",
-        "options" => array(
-            "GPU" => "GPU",
-            "PACKAGE" => "PACKAGE",
-            "MAX" => "MAX",
-        ),
-    ),
-    "DISPPWRSTATE" => "Power State",
-    "DISPMEMUSEDUTIL" => "Memory Utilization",
-    "DISPTEMP" => "Temperature",
-    "DISPFAN" => "Fan Usage",
+    // Common
+    "DISPCLOCK"         => "GPU Clock",
+    "DISPMEMCLOCK"      => "Memory Clock",
+    "DISPFAN"           => "Fan Usage",
+    "DISPPOWER"         => "Power Draw",
+    "DISPPERFSTATE"     => "Power State",
+    "DISPTHROTTLED"     => "Throttle Status",
+    "DISPMEMUSED"       => "Memory Usage",
+    "DISPENCUTIL"       => "Encoder Utilization",
+    "DISPDECUTIL"       => "Decoder Utilization",
+    "DISPRXUTIL"        => "PCI Rx Utilization",
+    "DISPTXUTIL"        => "PCI Tx Utilization",
+    "DISPSESSIONS"      => "Active Sessions",
 
-    // Nvidia settings
-    "DISPENCDEC" => "Encoder / Decoder Utilization",
-    "DISPTHROTTLE" => "Throttle Status",
-    "DISPSESSIONS" => "Active Sessions",
+    // Nvidia
+    "DISPSM_CLOCK"      => "Shader Clock",
+    "DISPVIDEO_CLOCK"   => "Video Clock",
 
-    // Intel settings
-    "DISP3DRENDER" => "3D Render Load",
-    "DISPBLITTER" => "Blitter Load",
-    "DISPVIDEO" => "Video Load",
-    "DISPVIDENH" => "Video Enhance Load",
-    "DISPINTERRUPT" => "Interrupts Per Second",
+    // Intel
+    "DISP3DRENDER"      => "3D Render Load",
+    "DISPBLITTER"       => "Blitter Load",
+    "DISPVIDEO"         => "Video Load",
+    "DISPVIDENH"        => "Video Enhance Load",
+    "DISPINTERRUPTS"    => "Interrupts Per Second",
+    "DISPPOWERUTIL"     => "Power Utilization",
 
-    // AMD settings
-    "DISPEVENT" => "Event Engine Usage",
-    "DISPVERTEX" => "Vertex Tesselator Usage",
-    "DISPTEXTURE" => "Texture Addresser Usage",
-    "DISPSHADEREXP" => "Shader Export Usage",
-    "DISPSEQUENCER" => "Sequencer Cache Usage",
-    "DISPSHADERINTER" => "Shader Interpolator Usage",
-    "DISPSCANCON" => "Scan Converter Usage",
-    "DISPPRIMASSEM" => "Primitive Assembly Usage",
-    "DISPDEPTHBLK" => "Depth Block Usage",
-    "DISPCOLORBLK" => "Color Block Usage",
-    "DISPUVD" => "UVD",
-    "DISPVCE0" => "VCE0",
-    "DISPGTTUSEDUTIL" => "Graphics Translation Usage",
+    // AMD radeontop
+    "DISPEVENT"         => "Event Engine Usage",
+    "DISPVERTEX"        => "Vertex Tesselator Usage",
+    "DISPTEXTURE"       => "Texture Addresser Usage",
+    "DISPSHADEREXP"     => "Shader Export Usage",
+    "DISPSEQUENCER"     => "Sequencer Cache Usage",
+    "DISPSHADERINTER"   => "Shader Interpolator Usage",
+    "DISPSCANCON"       => "Scan Converter Usage",
+    "DISPPRIMASSEM"     => "Primitive Assembly Usage",
+    "DISPDEPTHBLK"      => "Depth Block Usage",
+    "DISPCOLORBLK"      => "Color Block Usage",
+    "DISPUVD"           => "UVD",
+    "DISPVCE0"          => "VCE0",
+    "DISPGTTUSED"       => "Graphics Translation Usage",
 );
 
 // Configure error reporting
@@ -92,12 +91,8 @@ function save_cfg($val, $gpus, $settings) {
 
         $gpuid = str_replace(".", "_", $gpus[$gpupciid]['id']); // Replace period with underscore in GPU ID PHP issue
         foreach ($settings as $key => $label) {
-            if (is_array($label)) {
-                $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
-                $selectedOption = $val[$settingNameWithGPU];
-                $json_array[$gpupciid]['stats'][$key] = $selectedOption;
-            } else {
-                $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
+            $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
+            if (isset($val[$settingNameWithGPU])) {
                 $json_array[$gpupciid]['stats'][$key] = $val[$settingNameWithGPU];
             }
             unset($val[$settingNameWithGPU]);
@@ -137,6 +132,16 @@ if (count($_POST)) {
         save_cfg($cfg, $gpustat_data, $settings);
         $gpustat_cfg = parse_plugin_cfg("gpustat", true);
         $multigpus = json_decode(urldecode($gpustat_cfg["MULTIGPUJSON"]), true);
+
+        // Regenerate inventory + pool with the fresh config (e.g. after AMDUTILITY change)
+        $gpustat_cfg['inventory'] = true;
+        $gpustat_data = array_merge(
+            (new \gpustat\lib\Nvidia($gpustat_cfg))->getInventorym(),
+            (new \gpustat\lib\Intel($gpustat_cfg))->getInventory(),
+            (new \gpustat\lib\AMD($gpustat_cfg))->getInventory()
+        );
+        $gpustat_pool = fetchGPUStatistics($gpustat_data);
+
         unset($_POST);
     }
 }
@@ -166,46 +171,32 @@ UI Automatic Refresh / Interval (Seconds):
 <input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="30">
 <br>
 
+AMD Utility:
+: <select id="AMDUTILITY" name="AMDUTILITY" size="1">
+    <?=mk_option($gpustat_cfg['AMDUTILITY'] ?? 'radeontop', "radeontop", "radeontop");?>
+    <?=mk_option($gpustat_cfg['AMDUTILITY'] ?? 'radeontop', "nvtop", "nvtop");?>
+</select>
+
 <h4><b>Settings</b></h4>
 
 <?php
-function processGPUPoolData($gpustat_pool, $partialExcludeKeys) {
+// Build DISP+UPPER keys from GPU data — $settings whitelist controls what shows
+function processGPUPoolData($gpustat_pool) {
     $newData = array();
-
     foreach ($gpustat_pool as $pciId => $gpuData) {
         $processedData = array();
         foreach ($gpuData as $key => $value) {
-            $excludeKey = false;
-
-            // Check if the key includes any of the specified partial keys
-            foreach ($partialExcludeKeys as $partialKey) {
-                if (stripos($key, $partialKey) !== false) {
-                    $excludeKey = true;
-                    break;
-                }
-            }
-            // If the key should not be excluded, process it
-            if (!$excludeKey) {
-                $newKey = 'DISP' . strtoupper($key);
-                $processedData[$newKey] = $value;
-            }
+            if ($value === 'N/A' || $value === null || is_array($value)) continue;
+            $processedData['DISP' . strtoupper($key)] = $value;
         }
         $newData[$pciId] = $processedData;
     }
-
     return $newData;
 }
 
-// Define an array of partial keys to be excluded
-$partialExcludeKeys = array(
-    "max", "unit", "pcie", "driver", "bridge_bus",
-    "passedthrough", "vendor", "name", "temp", "util",
-    "appssupp", "processes", "uuid", "sessions", "thrtlrsn", "panel", "stats"
-);
-
 if (isset($gpustat_data)) {
     // Build settings needed for each GPU
-    $processedGPUPoolData = processGPUPoolData($gpustat_pool, $partialExcludeKeys);
+    $processedGPUPoolData = processGPUPoolData($gpustat_pool);
 
     foreach ($gpustat_data as $gpufresh) {
         $gpumodel_fresh = $gpufresh['model'];
@@ -214,8 +205,8 @@ if (isset($gpustat_data)) {
             '%s: %s%s%s',
             $gpuid_fresh,
             $gpumodel_fresh,
-            isset($gpufresh['bridge_chip']) ? ' - ' . $gpufresh['bridge_chip'] : '', // Include '- $gpu['bridge_chip']' if it exists
-            isset($gpufresh['guid']) ? ' - ' . $gpufresh['guid'] : '' // Include '- $gpu['guid']' if it exists
+            isset($gpufresh['bridge_chip']) ? ' - ' . $gpufresh['bridge_chip'] : '',
+            isset($gpufresh['guid']) ? ' - ' . $gpufresh['guid'] : ''
         );
         echo '<li class="section">';
         echo '<input type="checkbox" name="MULTIGPU[]" value="' . $gpuid_fresh . '" ';
@@ -225,7 +216,7 @@ if (isset($gpustat_data)) {
         echo '<label class="section-label">' . $gpudesc . '</label>';
         if ($checked) {
             $gpu = $multigpus[$gpuid_fresh];
-            $gpuid = str_replace(".", "_", $gpu['id']); // Replace period with underscore in GPU ID PHP issue
+            $gpuid = str_replace(".", "_", $gpu['id']);
 
             echo '<ul class="setting-list">';
 
@@ -234,22 +225,12 @@ if (isset($gpustat_data)) {
 
             foreach ($filteredSettings as $key => $label) {
                 echo '<li>';
-                $settingNameWithGPU = $key . '_' . $gpuid; // Append GPU ID to the setting name
+                $settingNameWithGPU = $key . '_' . $gpuid;
 
-                if (is_array($label)) {
-                    echo '<label>' . $label['name'] . '</label>';
-                    echo '<select name="' . $settingNameWithGPU . '">';
-                    foreach ($label['options'] as $optionValue => $optionLabel) {
-                        $selected = ($gpu['stats'][$key] == $optionValue) ? 'selected' : '';
-                        echo '<option value="' . $optionValue . '" ' . $selected . '>' . $optionLabel . '</option>';
-                    }
-                    echo '</select>';
-                } else {
-                    $isChecked = (!isset($gpu['stats'][$key]) || $gpu['stats'][$key] == 1) ? 'checked' : ''; // if not set defaults to true on all
-                    echo '<input type="hidden" name="' . $settingNameWithGPU . '" value="0">';
-                    echo '<input type="checkbox" name="' . $settingNameWithGPU . '" value="1" ' . $isChecked . '>';
-                    echo '<label>' . $label . '</label>';
-                }
+                $isChecked = (!isset($gpu['stats'][$key]) || $gpu['stats'][$key] == 1) ? 'checked' : '';
+                echo '<input type="hidden" name="' . $settingNameWithGPU . '" value="0">';
+                echo '<input type="checkbox" name="' . $settingNameWithGPU . '" value="1" ' . $isChecked . '>';
+                echo '<label>' . $label . '</label>';
                 echo '</li>';
             }
             echo '</ul>';

@@ -1,0 +1,32 @@
+[
+  {
+   "pci": "0000:0c:00.0",
+   "integrated_graphics": false,
+   "encode_decode_shared": true,
+   "temp_slowdown_threshold": "100C",
+   "temp_shutdown_threshold": "105C",
+   "max_pcie_gen": 4,
+   "max_pcie_link_width": 16,
+   "device_name": "AMD Radeon RX 6800/6800 XT / 6900 XT",
+   "gpu_clock": "500MHz",
+   "gpu_clock_max": "2475MHz",
+   "mem_clock": "96MHz",
+   "mem_clock_max": "1049MHz",
+   "temp": "42C",
+   "fan_speed": "20%",
+   "power_draw": "25W",
+   "power_draw_max": "300W",
+   "gpu_util": "5%",
+   "encode_decode": "0%",
+   "mem_util": "4%",
+   "mem_total": "16384.0 MiB",
+   "mem_used": "256.00 MiB",
+   "mem_free": "16128.0 MiB",
+   "pcie_link_gen": 3,
+   "pcie_link_width": 16,
+   "pcie_rx": null,
+   "pcie_tx": null,
+   "effective_load_rate": 5,
+   "processes" : []
+  }
+]
