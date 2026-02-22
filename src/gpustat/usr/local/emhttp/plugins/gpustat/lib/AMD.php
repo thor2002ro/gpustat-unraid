@@ -9,23 +9,6 @@ class AMD extends Main
     const NVTOP_UTILITY = 'nvtop'; // Alternative: comprehensive JSON output
     const NVTOP_PARAM = '-s'; // nvtop snapshot mode
 
-    // Supported apps for process detection (nvtop path only, same list as Nvidia)
-    const SUPPORTED_APPS = [
-        'plex' => ['Plex Transcoder'],
-        'jellyfin' => ['jellyfin-ffmpeg'],
-        'handbrake' => ['/usr/bin/HandBrakeCLI'],
-        'emby' => ['emby'],
-        'tdarr' => ['ffmpeg', 'HandbrakeCLI'],
-        'unmanic' => ['ffmpeg'],
-        'dizquetv' => ['ffmpeg'],
-        'ersatztv' => ['ffmpeg'],
-        'fileflows' => ['ffmpeg'],
-        'frigate' => ['ffmpeg'],
-        'deepstack' => ['python3'],
-        'nsfminer' => ['nsfminer'],
-        'shinobipro' => ['shinobi'],
-        'foldinghome' => ['FahCore'],
-    ];
     const INVENTORY_UTILITY = 'lspci'; // GPU detection
     const INVENTORY_PARAM = ' -mm | grep VGA';
     const INVENTORY_REGEX =
@@ -69,9 +52,9 @@ class AMD extends Main
      */
     public function __construct(array $settings = [])
     {
-        // Pick utility based on AMDUTILITY config (radeontop or nvtop)
-        $utility = strtolower($settings['AMDUTILITY'] ?? 'radeontop');
-        $settings += ['cmd' => ($utility === 'nvtop') ?self::NVTOP_UTILITY : self::RADEONTOP_UTILITY];
+        // Pick utility based on AMDUTILITY config (nvtop or radeontop)
+        $utility = strtolower($settings['AMDUTILITY'] ?? 'nvtop');
+        $settings += ['cmd' => ($utility === 'radeontop') ?self::RADEONTOP_UTILITY : self::NVTOP_UTILITY];
         parent::__construct($settings);
     }
 
@@ -115,9 +98,24 @@ class AMD extends Main
         return $result;
     }
 
-    // Get live stats: radeontop or nvtop → sensors → lspci PCIe data
+    // Get live stats: radeontop or nvtop → sensors → lspci PCIe data.
+    // Supports VFIO passthrough detection.
     public function getStatistics(array $gpu): string
     {
+        $fullPciId = '0000:' . ($gpu['guid'] ?? $gpu['id'] ?? '');
+        $driver = strtoupper($this->getKernelDriver($fullPciId));
+
+        // VFIO passthrough — GPU is in a VM
+        if ($this->checkVFIO($fullPciId)) {
+            $this->pageData['vendor'] = 'AMD';
+            $this->pageData['name'] = $gpu['model'] ?? 'AMD GPU';
+            $this->pageData['driver'] = $driver;
+            $this->pageData['vfio'] = true;
+            $this->pageData['vfiovm'] = $this->getGpuVm($gpu['guid'] ?? $gpu['id'] ?? '');
+            $this->getPCIeBandwidthFromSysfs($fullPciId);
+            return json_encode($this->pageData);
+        }
+
         $useNvtop = strtolower($this->settings['AMDUTILITY'] ?? 'radeontop') === 'nvtop';
 
         if ($useNvtop) {
@@ -154,6 +152,8 @@ class AMD extends Main
             }
         }
 
+        $this->pageData['driver'] = $driver;
+        $this->pageData['vfio'] = false;
         return json_encode($this->pageData);
     }
 
@@ -401,30 +401,34 @@ class AMD extends Main
             $this->pageData['txutilunit'] = 'MB/s';
         }
 
-        // Process detection
-        foreach (self::SUPPORTED_APPS as $app => $cmds) {
-            $this->pageData['processes'][($app . 'using')] = false;
-            $this->pageData['processes'][($app . 'mem')] = 0;
-            $this->pageData['processes'][($app . 'count')] = 0;
-        }
-        $this->pageData['appssupp'] = array_keys(self::SUPPORTED_APPS);
         $this->pageData['sessions'] = 0;
+        $this->pageData['active_apps'] = [];
 
         if (isset($gpuData['processes']) && is_array($gpuData['processes'])) {
             $this->pageData['sessions'] = count($gpuData['processes']);
             if ($gpu['id'] === 'FAKE_amd') {
-                foreach (self::SUPPORTED_APPS as $app => $cmds) {
-                    $this->pageData['processes'][($app . 'using')] = true;
-                    $this->pageData['processes'][($app . 'mem')] = 25;
-                    $this->pageData['processes'][($app . 'count')] = 2;
-                }
+                $this->detectApplicationDynamic(['pid' => 111, 'name' => 'plex', 'memory' => '25 MiB']);
+                $this->detectApplicationDynamic(['pid' => 222, 'name' => 'jellyfin', 'memory' => '30 MiB']);
             }
             else {
                 foreach ($gpuData['processes'] as $proc) {
                     if (isset($proc['cmdline'])) {
                         $pid = (int)($proc['pid'] ?? 0);
                         $memMB = (int)round((float)$stripUnit($proc['gpu_mem_bytes_alloc'] ?? '0'));
-                        $this->detectApplication($pid, (string)$proc['cmdline'], $memMB);
+                        // Populate active_apps with full nvtop stats for rich tooltips
+                        $cmdBasename = basename(explode(' ', (string)$proc['cmdline'])[0]);
+                        $this->detectApplicationDynamic([
+                            'pid' => $pid,
+                            'name' => $cmdBasename,
+                            'memory' => $memMB . ' MiB',
+                            'gpu_usage' => $proc['gpu_usage'] ?? null,
+                            'mem_usage' => $proc['gpu_mem_usage'] ?? null,
+                            'enc_dec' => $proc['encode_decode'] ?? null,
+                            'encode' => $proc['encode'] ?? null,
+                            'decode' => $proc['decode'] ?? null,
+                            'kind' => $proc['kind'] ?? null,
+                            'user' => $proc['user'] ?? null,
+                        ]);
                     }
                 }
             }
@@ -435,42 +439,6 @@ class AMD extends Main
         // Merge sensors (voltage) and lspci (driver, bridge chip, passthrough)
         $this->pageData = array_merge($this->pageData, $this->getSensorData($gpu['guid']));
         $this->pageData = array_merge($this->pageData, $this->getpciedata($gpu));
-    }
-
-    /**
-     * Match a process against SUPPORTED_APPS by its command line.
-     * Uses /proc to resolve ambiguous binaries (ffmpeg, python3, etc.)
-     */
-    private function detectApplication(int $pid, string $processName, int $usedMemory): void
-    {
-        foreach (self::SUPPORTED_APPS as $app => $commands) {
-            foreach ($commands as $command) {
-                if (strpos($processName, $command) !== false) {
-                    if (in_array($command, ['ffmpeg', 'HandbrakeCLI', 'python3'])) {
-                        if ($pid > 0) {
-                            $pid_info = $this->getFullCommand($pid);
-                            if (!empty($pid_info)) {
-                                if ($command === 'python3') {
-                                    if (strpos($pid_info, '/app/intelligencelayer/shared') === false) {
-                                        continue 2;
-                                    }
-                                }
-                                elseif (stripos($pid_info, $app) === false) {
-                                    $ppid_info = $this->getParentCommand($pid);
-                                    if (stripos($ppid_info, $app) === false) {
-                                        continue 2;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    $this->pageData['processes'][($app . 'using')] = true;
-                    $this->pageData['processes'][($app . 'mem')] += $usedMemory;
-                    $this->pageData['processes'][($app . 'count')]++;
-                    break 2;
-                }
-            }
-        }
     }
 
     // Parse radeontop output into pageData, then merge sensor + PCIe data

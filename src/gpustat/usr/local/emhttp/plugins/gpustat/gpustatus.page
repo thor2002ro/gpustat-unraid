@@ -39,11 +39,6 @@ $multi = urldecode($gpustat_cfg["MULTIGPUJSON"]) ;
 $multigpus = json_decode($multi,true) ; // keyed by PCI ID
 $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
 
-// Supported apps for GPU process detection (Nvidia only)
-$apps = [
-    'plex', 'jellyfin', 'handbrake', 'emby', 'tdarr', 'unmanic', 'dizquetv', 'ersatztv',
-    'fileflows', 'frigate', 'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
-];
 
 $i= $j =$k = 1;  // $i=panel#, $j=column(1-3), $k=tile group
 $gpus_selected = count($multigpus) ;
@@ -75,22 +70,29 @@ foreach ($multigpus as $id=>$gpu) {
         // Util wrapper (icon+value) — tooltip set by JS
         $stats .= "<span class='gpu{$i}-util-wrap'><i class='fa fa-microchip fa-1x'></i>&nbsp<span class='gpu-stats-primary gpu{$i}-util'></span></span>&nbsp;&nbsp;&nbsp;";
 
-        if ($gpu_nv || $gpu_amd) {
-        // Temp wrapper — tooltip set by JS
+        // Temp wrapper — tooltip set by JS (all vendors)
         if ($gpustat_cfg['DISPTEMP']) $stats .= "<span class='gpu{$i}-temp-wrap'><i class='fa fa-thermometer-half fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-temp'></span></span>&nbsp;&nbsp;&nbsp;" ;
 
-        // Voltage
+        // Voltage (AMD/Nvidia)
+        if ($gpu_nv || $gpu_amd) {
         $stats .= "<span class='gpu{$i}-voltage-wrap hidden'><i class='fa fa-bolt fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-voltage'></span><span class='gpu{$i}-voltageunit'></span></span>&nbsp;&nbsp;&nbsp;";
-
-        // PCIe gen/width with red down-arrows when below max
-        $stats .= "<span title='PCIe Gen' class='gpu-stats-primary'><i class='fa fa-cogs fa-1x'></i>&nbsp;<span class='gpu{$i}-pciegen'></span>&nbsp;<i id='gpu{$i}-pciegen-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i><span>&nbsp;-&nbsp;</span><span class='gpu{$i}-pciewidth'></span>&nbsp;<i id='gpu{$i}-pciewidth-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i></span>&nbsp;&nbsp;&nbsp;";
-
-        // PCIe Rx/Tx
-        $stats .= "<span class='gpu{$i}-rxutil-wrap hidden'><i class='fa fa-arrow-down fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-rxutil'></span>&nbsp;<span class='gpu{$i}-rxutilunit'></span></span>&nbsp;&nbsp;&nbsp;";
-        $stats .= "<span class='gpu{$i}-txutil-wrap hidden'><i class='fa fa-arrow-up fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-txutil'></span>&nbsp;<span class='gpu{$i}-txutilunit'></span></span>&nbsp;&nbsp;&nbsp;";
         }
 
-        if ($gpu_nv && $gpustat_cfg['DISPSESSIONS']) $stats .="<span> Processes: <span class='gpu{$i}-sessions'></span></span>";
+        // PCIe gen/width with red down-arrows when below max (all vendors)
+        $stats .= "<span title='PCIe Gen' class='gpu-stats-primary'><i class='fa fa-cogs fa-1x'></i>&nbsp;<span class='gpu{$i}-pciegen'></span>&nbsp;<i id='gpu{$i}-pciegen-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i><span>&nbsp;-&nbsp;</span><span class='gpu{$i}-pciewidth'></span>&nbsp;<i id='gpu{$i}-pciewidth-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i></span>&nbsp;&nbsp;&nbsp;";
+
+        // PCIe Rx/Tx (all vendors)
+        $stats .= "<span class='gpu{$i}-rxutil-wrap hidden'><i class='fa fa-arrow-down fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-rxutil'></span>&nbsp;<span class='gpu{$i}-rxutilunit'></span></span>&nbsp;&nbsp;&nbsp;";
+        $stats .= "<span class='gpu{$i}-txutil-wrap hidden'><i class='fa fa-arrow-up fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-txutil'></span>&nbsp;<span class='gpu{$i}-txutilunit'></span></span>&nbsp;&nbsp;&nbsp;";
+
+        // Driver badge (e.g. NVIDIA, NOUVEAU, AMDGPU, I915, XE)
+        $stats .= "<span class='gpu{$i}-driver-wrap hidden' style='opacity:0.6;font-size:0.85em;'><i class='fa fa-microchip fa-1x'></i>&nbsp;<span class='gpu{$i}-driver'></span></span>&nbsp;&nbsp;&nbsp;";
+
+        if ($gpustat_cfg['DISPSESSIONS']) $stats .="<span> Processes: <span class='gpu{$i}-sessions'></span></span>";
+
+        // VFIO info row (populated by JS when a GPU is in passthrough)
+        $stats .= "<span class='gpu{$i}-vfio-info' style='display:none;'></span>";
+
     $stats .= "<br><br></div>" ;
 
     $layout = GPULayout($i, $gpu["vendor"],$gpustat_cfg) ;
@@ -162,16 +164,12 @@ $page_render = '';
     </td></tr>
 </script>
 
-<!-- Active apps row (Nvidia only) -->
-<script id="message-template-sessions" type="text/template">
-    <tr>
-        <td colspan ='2' >
-            <span class='w36'><i class='ups fa fa-fw icon-hardware'></i>_(Active Apps)_</span>
-            <?php foreach($apps as $app): ?>
-                <span id='w16 gpu{{gpuNR}}-img-span-<?=$app?>' class='hidden gpu{{gpuNR}}-img-span-<?=$app?>'>
-                    <img id='gpu{{gpuNR}}-<?=$app?>' class='gpu-image' src='/plugins/gpustat/images/<?=$app?>.png'>
-                </span>
-            <?php endforeach; ?>
+<!-- Active apps row (Docker containers + host processes with icon badges) -->
+<script id="message-template-active-apps" type="text/template">
+    <tr style="display:none;">
+        <td colspan='2'>
+            <span class='w36'><i class='ups fa fa-fw fa-cubes'></i>_(Active Apps)_</span>
+            <span class='gpu{{gpuNR}}-active-apps'></span>
         </td>
     </tr>
 </script>

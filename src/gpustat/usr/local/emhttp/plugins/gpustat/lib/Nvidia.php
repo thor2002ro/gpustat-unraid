@@ -15,24 +15,6 @@ class Nvidia extends Main
     const INVENTORY_PARM_PCI = "-q -x -g %s 2>&1 | grep 'gpu id'";
     const INVENTORY_REGEX = '/GPU\s(?P<id>\d):\s(?P<model>.*)\s\(UUID:\s(?P<guid>GPU-[0-9a-f-]+)\)/i';
     const STATISTICS_PARAM = '-q -x -g %s 2>&1';
-    const SUPPORTED_APPS = [
-        // Order here is important because some apps use the same binaries -- order should be more specific to less
-        'plex' => ['Plex Transcoder'],
-        'jellyfin' => ['jellyfin-ffmpeg'],
-        'handbrake' => ['/usr/bin/HandBrakeCLI'],
-        'emby' => ['emby'],
-        'tdarr' => ['ffmpeg', 'HandbrakeCLI'],
-        'unmanic' => ['ffmpeg'],
-        'dizquetv' => ['ffmpeg'],
-        'ersatztv' => ['ffmpeg'],
-        'fileflows' => ['ffmpeg'],
-        'frigate' => ['ffmpeg'],
-        'deepstack' => ['python3'],
-        'nsfminer' => ['nsfminer'],
-        'shinobipro' => ['shinobi'],
-        'foldinghome' => ['FahCore'],
-    ];
-
 
 
     /**
@@ -46,47 +28,6 @@ class Nvidia extends Main
     }
 
     /**
-     * Iterates supported applications and their respective commands to match against processes using GPU hardware
-     *
-     * @param SimpleXMLElement $process
-     */
-    private function detectApplication(SimpleXMLElement $process)
-    {
-        foreach (self::SUPPORTED_APPS as $app => $commands) {
-            foreach ($commands as $command) {
-                if (strpos($process->process_name, $command) !== false) {
-                    // For Handbrake/ffmpeg: arguments tell us which application called it
-                    if (in_array($command, ['ffmpeg', 'HandbrakeCLI', 'python3'])) {
-                        if (isset($process->pid)) {
-                            $pid_info = $this->getFullCommand((int) $process->pid);
-                            if (!empty($pid_info) && strlen($pid_info) > 0) {
-                                if ($command === 'python3') {
-                                    // Deepstack doesn't have any signifier in the full command output
-                                    if (strpos($pid_info, '/app/intelligencelayer/shared') === false) {
-                                        continue 2;
-                                    }
-                                } elseif (stripos($pid_info, $app) === false) {
-                                    // Try to match the app name in the parent process
-                                    $ppid_info = $this->getParentCommand((int) $process->pid);
-                                    if (stripos($ppid_info, $app) === false) {
-                                        // We didn't match the application name in the arguments, no match
-                                        continue 2;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    $this->pageData['processes'][($app . "using")] = true;
-                    $this->pageData['processes'][($app . "mem")] += (int) $process->used_memory;
-                    $this->pageData['processes'][($app . "count")]++;
-                    // If we match a more specific command/app to a process, continue on to the next process
-                    break 2;
-                }
-            }
-        }
-    }
-
-    /**
      * Parses PCI Bus Utilization data
      *
      * @param SimpleXMLElement $pci
@@ -95,29 +36,29 @@ class Nvidia extends Main
     {
         if (isset($pci->rx_util, $pci->tx_util)) {
             // Not all cards support PCI RX/TX Measurements
-            if ((string) $pci->rx_util !== 'N/A') {
-                $this->pageData['rxutil'] = $this->roundFloat(((float) ($pci->rx_util) / 1000), 1);
+            if ((string)$pci->rx_util !== 'N/A') {
+                $this->pageData['rxutil'] = $this->roundFloat(((float)($pci->rx_util) / 1000), 1);
             }
-            if ((string) $pci->tx_util !== 'N/A') {
-                $this->pageData['txutil'] = $this->roundFloat(((float) ($pci->tx_util) / 1000), 1);
+            if ((string)$pci->tx_util !== 'N/A') {
+                $this->pageData['txutil'] = $this->roundFloat(((float)($pci->tx_util) / 1000), 1);
             }
         }
         if (
-            isset(
-            $pci->pci_gpu_link_info->pcie_gen->current_link_gen,
-            $pci->pci_gpu_link_info->pcie_gen->max_link_gen,
-            $pci->pci_gpu_link_info->link_widths->current_link_width,
-            $pci->pci_gpu_link_info->link_widths->max_link_width
+        isset(
+        $pci->pci_gpu_link_info->pcie_gen->current_link_gen,
+        $pci->pci_gpu_link_info->pcie_gen->max_link_gen,
+        $pci->pci_gpu_link_info->link_widths->current_link_width,
+        $pci->pci_gpu_link_info->link_widths->max_link_width
         )
         ) {
-            $this->pageData['pciegen'] = (int) $pci->pci_gpu_link_info->pcie_gen->current_link_gen;
-            $this->pageData['pciewidth'] = "x" . (int) $pci->pci_gpu_link_info->link_widths->current_link_width;
-            $generation = (int) $pci->pci_gpu_link_info->pcie_gen->current_link_gen;
-            $width = (int) $pci->pci_gpu_link_info->link_widths->current_link_width;
+            $this->pageData['pciegen'] = (int)$pci->pci_gpu_link_info->pcie_gen->current_link_gen;
+            $this->pageData['pciewidth'] = "x" . (int)$pci->pci_gpu_link_info->link_widths->current_link_width;
+            $generation = (int)$pci->pci_gpu_link_info->pcie_gen->current_link_gen;
+            $width = (int)$pci->pci_gpu_link_info->link_widths->current_link_width;
             // @ 16x Lanes: Gen 1 = 4000, 2 = 8000, 3 = 16000 MB/s -- Slider bars won't be that active with most workloads
             $this->pageData['rxutilmax'] = $this->pageData['txutilmax'] = pow(2, $generation - 1) * 250 * $width;
-            $this->pageData['pciegenmax'] = (int) $pci->pci_gpu_link_info->pcie_gen->max_link_gen;
-            $this->pageData['pciewidthmax'] = "x" . (int) $pci->pci_gpu_link_info->link_widths->max_link_width;
+            $this->pageData['pciegenmax'] = (int)$pci->pci_gpu_link_info->pcie_gen->max_link_gen;
+            $this->pageData['pciewidthmax'] = "x" . (int)$pci->pci_gpu_link_info->link_widths->max_link_width;
         }
     }
 
@@ -178,7 +119,8 @@ class Nvidia extends Main
         if (strlen($name) > 20 && str_word_count($name) > 2) {
             $words = explode(" ", $name);
             $this->pageData['name'] = sprintf("%0s %1s", $words[0], $words[1]);
-        } else {
+        }
+        else {
             $this->pageData['name'] = $name;
         }
     }
@@ -192,14 +134,14 @@ class Nvidia extends Main
     {
         if (isset($data->temperature)) {
             if (isset($data->temperature->gpu_temp)) {
-                $this->pageData['temp'] = (string) str_replace('C', '°C', $data->temperature->gpu_temp);
+                $this->pageData['temp'] = (string)str_replace('C', '°C', $data->temperature->gpu_temp);
             }
             if (isset($data->temperature->gpu_temp_max_threshold)) {
-                $this->pageData['tempmax'] = (string) str_replace('C', '°C', $data->temperature->gpu_temp_max_threshold);
+                $this->pageData['tempmax'] = (string)str_replace('C', '°C', $data->temperature->gpu_temp_max_threshold);
             }
             if ($this->settings['TEMPFORMAT'] == 'F') {
                 foreach (['temp', 'tempmax'] as $key) {
-                    $this->pageData[$key] = $this->convertCelsius((int) $this->stripText('C', $this->pageData[$key])) . 'F';
+                    $this->pageData[$key] = $this->convertCelsius((int)$this->stripText('C', $this->pageData[$key])) . 'F';
                 }
             }
         }
@@ -235,34 +177,66 @@ class Nvidia extends Main
 
         if (isset($data->power_readings)) {
             if (isset($data->power_readings->power_draw)) {
-                $this->pageData['power'] = $this->roundFloat((float) $data->power_readings->power_draw, 1);
+                $this->pageData['power'] = $this->roundFloat((float)$data->power_readings->power_draw, 1);
             }
             if (isset($data->power_readings->power_limit)) {
-                $this->pageData['powermax'] = $this->roundFloat((float) $data->power_readings->power_limit, 1);
+                $this->pageData['powermax'] = $this->roundFloat((float)$data->power_readings->power_limit, 1);
             }
         }
 
     }
 
     /**
-     * Retrieves NVIDIA card statistics
+     * Retrieves NVIDIA card statistics.
+     * Supports: nvidia-smi (proprietary), Nouveau (open-source), VFIO passthrough.
      */
     public function getStatistics($gpu)
     {
-        if ($gpu['id'] === "FAKE_nvidia") {
-            $this->stdout = file_get_contents(__DIR__ . '/../sample/nvidia-smi-stdout.txt');
-        } else if ($this->cmdexists) {
-            //Command invokes nvidia-smi in query all mode with XML return
-            $this->stdout = shell_exec(self::CMD_UTILITY . ES . sprintf(self::STATISTICS_PARAM, $gpu['id']));
-        } else {
-            $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+        $fullPciId = '0000:' . ($gpu['guid'] ?? $gpu['id'] ?? '');
+        $driver = strtoupper($this->getKernelDriver($fullPciId));
+
+        // Normalize driver name
+        if ($driver !== 'NVIDIA' && $driver !== 'NOUVEAU' && $driver !== 'VFIO-PCI') {
+            $driver = $this->cmdexists ? 'NVIDIA' : '';
         }
 
-        if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-            $this->parseStatistics($gpu);
-        } else {
+        // VFIO passthrough — GPU is in a VM
+        if ($this->checkVFIO($fullPciId)) {
+            $this->pageData['vendor'] = 'NVIDIA';
+            $this->pageData['name'] = $gpu['model'] ?? 'NVIDIA GPU';
+            $this->pageData['driver'] = $driver;
+            $this->pageData['vfio'] = true;
+            $this->pageData['vfiovm'] = $this->getGpuVm($gpu['guid'] ?? $gpu['id'] ?? '');
+            $this->getPCIeBandwidthFromSysfs($fullPciId);
+            return json_encode($this->pageData);
+        }
+
+        if ($gpu['id'] === 'FAKE_nvidia') {
+            $this->stdout = file_get_contents(__DIR__ . '/../sample/nvidia-smi-stdout.txt');
+        }
+        elseif ($driver === 'NOUVEAU') {
+            // Nouveau: build synthetic nvidia-smi XML from sysfs
+            $this->stdout = $this->buildNouveauXML($fullPciId);
+        }
+        elseif ($this->cmdexists) {
+            // Proprietary nvidia driver: use nvidia-smi
+            $this->stdout = shell_exec(self::CMD_UTILITY . ES . sprintf(self::STATISTICS_PARAM, $gpu['id']));
+        }
+        else {
             $this->pageData['error'][] = Error::get(Error::VENDOR_UTILITY_NOT_FOUND);
         }
+
+        if (!empty($this->stdout)) {
+            $this->parseStatistics($gpu);
+        }
+        else {
+            if (!isset($this->pageData['error'])) {
+                $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_NOT_RETURNED);
+            }
+        }
+
+        $this->pageData['driver'] = $driver;
+        $this->pageData['vfio'] = false;
         return json_encode($this->pageData);
     }
 
@@ -286,8 +260,8 @@ class Nvidia extends Main
 
         }
         if (isset($data->fb_memory_usage->used, $data->fb_memory_usage->total)) {
-            $this->pageData['memusedmax'] = (int) $data->fb_memory_usage->total;
-            $this->pageData['memused'] = (int) $data->fb_memory_usage->used;
+            $this->pageData['memusedmax'] = (int)$data->fb_memory_usage->total;
+            $this->pageData['memused'] = (int)$data->fb_memory_usage->used;
             $this->pageData['memusedunit'] = preg_replace('/[^a-zA-Z]/', '', $data->fb_memory_usage->used);
             $this->pageData['memusedutil'] = round($this->pageData['memused'] / $this->pageData['memusedmax'] * 100) . "%";
         }
@@ -333,58 +307,58 @@ class Nvidia extends Main
                 'txutilunit' => "MB/s",
             ];
 
-            // Set App HW Usage Defaults
-            foreach (self::SUPPORTED_APPS as $app => $process) {
-                $this->pageData['processes'][($app . "using")] = false;
-                $this->pageData['processes'][($app . "mem")] = 0;
-                $this->pageData['processes'][($app . "count")] = 0;
-            }
+            // App HW Usage Defaults are no longer needed for static apps
+
             if (isset($data->product_name)) {
                 $this->getProductName($data->product_name);
             }
             if (isset($data->uuid)) {
-                $this->pageData['uuid'] = (string) $data->uuid;
-            } else {
+                $this->pageData['uuid'] = (string)$data->uuid;
+            }
+            else {
                 $this->pageData['uuid'] = $gpu['id'];
             }
             $this->getUtilization($data);
             $this->getSensorData($data);
             if (isset($data->clocks, $data->max_clocks)) {
                 if (isset($data->clocks->graphics_clock, $data->max_clocks->graphics_clock)) {
-                    $this->pageData['clock'] = (int) $data->clocks->graphics_clock;
+                    $this->pageData['clock'] = (int)$data->clocks->graphics_clock;
                     $this->pageData['clockunit'] = preg_replace('/[^a-zA-Z]/', '', $data->clocks->graphics_clock);
-                    $this->pageData['clockmax'] = (int) $data->max_clocks->graphics_clock;
+                    $this->pageData['clockmax'] = (int)$data->max_clocks->graphics_clock;
                 }
                 if (isset($data->clocks->sm_clock, $data->max_clocks->sm_clock)) {
-                    $this->pageData['sm_clock'] = (int) $data->clocks->sm_clock;
+                    $this->pageData['sm_clock'] = (int)$data->clocks->sm_clock;
                     $this->pageData['sm_clockunit'] = preg_replace('/[^a-zA-Z]/', '', $data->clocks->sm_clock);
-                    $this->pageData['sm_clockmax'] = (int) $data->max_clocks->sm_clock;
+                    $this->pageData['sm_clockmax'] = (int)$data->max_clocks->sm_clock;
                 }
                 if (isset($data->clocks->video_clock, $data->max_clocks->video_clock)) {
-                    $this->pageData['video_clock'] = (int) $data->clocks->video_clock;
+                    $this->pageData['video_clock'] = (int)$data->clocks->video_clock;
                     $this->pageData['video_clockunit'] = preg_replace('/[^a-zA-Z]/', '', $data->clocks->video_clock);
-                    $this->pageData['video_clockmax'] = (int) $data->max_clocks->video_clock;
+                    $this->pageData['video_clockmax'] = (int)$data->max_clocks->video_clock;
                 }
                 if (isset($data->clocks->mem_clock, $data->max_clocks->mem_clock)) {
-                    $this->pageData['memclock'] = (int) $data->clocks->mem_clock;
+                    $this->pageData['memclock'] = (int)$data->clocks->mem_clock;
                     $this->pageData['memclockunit'] = preg_replace('/[^a-zA-Z]/', '', $data->clocks->mem_clock);
-                    $this->pageData['memclockmax'] = (int) $data->max_clocks->mem_clock;
+                    $this->pageData['memclockmax'] = (int)$data->max_clocks->mem_clock;
                 }
             }
             // For some reason, encoder_sessions->session_count is not reliable on my install, better to count processes
-            $this->pageData['appssupp'] = array_keys(self::SUPPORTED_APPS);
+            $this->pageData['active_apps'] = [];
             if (isset($data->processes->process_info)) {
                 $this->pageData['sessions'] = count($data->processes->process_info);
                 if ($this->pageData['sessions'] > 0) {
                     foreach ($data->processes->children() as $process) {
                         if ($gpu['id'] === "FAKE_nvidia") {
-                            foreach (self::SUPPORTED_APPS as $app => $process) {
-                                $this->pageData['processes'][($app . "using")] = true;
-                                $this->pageData['processes'][($app . "mem")] = 25;
-                                $this->pageData['processes'][($app . "count")] = 2;
-                            }
-                        } else if (isset($process->process_name)) {
-                            $this->detectApplication($process);
+                            $this->detectApplicationDynamic(['pid' => 111, 'name' => 'plex', 'memory' => '25 MiB']);
+                            $this->detectApplicationDynamic(['pid' => 222, 'name' => 'jellyfin', 'memory' => '30 MiB']);
+                        }
+                        else if (isset($process->process_name)) {
+                            // Populate active_apps for dynamic Docker/host display
+                            $this->detectApplicationDynamic([
+                                'pid'    => (int)($process->pid ?? 0),
+                                'name'   => (string)$process->process_name,
+                                'memory' => (string)($process->used_memory ?? '0 MiB'),
+                            ]);
                         }
                     }
                 }
@@ -392,8 +366,143 @@ class Nvidia extends Main
 
             $this->getBusUtilization($data->pci);
 
-        } else {
+        }
+        else {
             $this->pageData['error'][] = Error::get(Error::VENDOR_DATA_BAD_PARSE);
         }
+    }
+
+    /**
+     * Builds a synthetic nvidia-smi XML document from sysfs/hwmon data.
+     * Used when the Nouveau open-source driver is active (no nvidia-smi).
+     * The XML structure mirrors nvidia-smi output so parseStatistics() works unchanged.
+     *
+     * @param string $pciId Full PCI ID (e.g. "0000:0c:00.0")
+     * @return string XML string
+     */
+    private function buildNouveauXML(string $pciId): string
+    {
+        $gpuPath = "/sys/bus/pci/devices/$pciId/";
+        $clientsPath = "/sys/kernel/debug/dri/$pciId/clients";
+        $hwmonPath = $this->findHwmonPath($pciId);
+
+        $xml = new \SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><nvidia_smi_log></nvidia_smi_log>");
+        $xml->addChild('timestamp', date('r'));
+        $xml->addChild('driver_version', $this->getSysfsValue('/sys/module/nouveau/version', 'Nouveau'));
+        $xml->addChild('cuda_version', 'N/A');
+        $xml->addChild('attached_gpus', '1');
+
+        $gpu = $xml->addChild('gpu');
+        $gpu->addAttribute('id', $pciId);
+        $gpu->addChild('product_name', $this->getGpuNameFromUdev($pciId));
+        $gpu->addChild('uuid', 'GPU-' . md5($pciId));
+
+        // PCIe link info
+        $pci = $gpu->addChild('pci');
+        $gpuLinkInfo = $pci->addChild('pci_gpu_link_info');
+        $pcieGen = $gpuLinkInfo->addChild('pcie_gen');
+        $maxSpeed = $this->getSysfsValue("$gpuPath/max_link_speed");
+        $curSpeed = $this->getSysfsValue("$gpuPath/current_link_speed", $maxSpeed);
+        $pcieGen->addChild('max_link_gen', (string)$this->parsePCIEgen($maxSpeed));
+        $pcieGen->addChild('current_link_gen', (string)$this->parsePCIEgen($curSpeed));
+        $linkWidths = $gpuLinkInfo->addChild('link_widths');
+        $linkWidths->addChild('max_link_width', $this->getSysfsValue("$gpuPath/max_link_width") . 'x');
+        $linkWidths->addChild('current_link_width', $this->getSysfsValue("$gpuPath/current_link_width",
+            $this->getSysfsValue("$gpuPath/max_link_width")) . 'x');
+        $pci->addChild('tx_util', 'N/A');
+        $pci->addChild('rx_util', 'N/A');
+
+        // Temperature from hwmon
+        $temperature = $gpu->addChild('temperature');
+        if ($hwmonPath && file_exists("$hwmonPath/temp1_input")) {
+            $tempRaw = (int)$this->getSysfsValue("$hwmonPath/temp1_input", '0');
+            $temperature->addChild('gpu_temp', round($tempRaw / 1000) . ' C');
+        }
+        else {
+            $temperature->addChild('gpu_temp', 'N/A');
+        }
+        if ($hwmonPath && file_exists("$hwmonPath/temp1_crit")) {
+            $critRaw = (int)$this->getSysfsValue("$hwmonPath/temp1_crit", '0');
+            $temperature->addChild('gpu_temp_max_threshold', round($critRaw / 1000) . ' C');
+        }
+        else {
+            $temperature->addChild('gpu_temp_max_threshold', '105 C');
+        }
+
+        // Fan speed from hwmon (PWM 0-255 → percentage)
+        if ($hwmonPath && file_exists("$hwmonPath/pwm1")) {
+            $pwm = (int)$this->getSysfsValue("$hwmonPath/pwm1", '0');
+            $gpu->addChild('fan_speed', round($pwm / 255 * 100) . ' %');
+        }
+        else {
+            $gpu->addChild('fan_speed', 'N/A');
+        }
+
+        $gpu->addChild('performance_state', 'P0');
+
+        // Clocks event reasons (all inactive for Nouveau)
+        $clocksEvent = $gpu->addChild('clocks_event_reasons');
+        $events = ['gpu_idle', 'applications_clocks_setting', 'sw_power_cap', 'hw_slowdown',
+            'hw_thermal_slowdown', 'hw_power_brake_slowdown', 'sync_boost',
+            'sw_thermal_slowdown', 'display_clocks_setting'];
+        foreach ($events as $event) {
+            $clocksEvent->addChild("clocks_event_reason_$event", 'Not Active');
+        }
+
+        // Memory (Nouveau doesn't easily expose this, use placeholder)
+        $fbMemory = $gpu->addChild('fb_memory_usage');
+        $fbMemory->addChild('total', 'N/A');
+        $fbMemory->addChild('used', 'N/A');
+        $fbMemory->addChild('free', 'N/A');
+
+        // Utilization (not available on Nouveau)
+        $utilization = $gpu->addChild('utilization');
+        $utilization->addChild('gpu_util', 'N/A');
+        $utilization->addChild('memory_util', 'N/A');
+        $utilization->addChild('encoder_util', 'N/A');
+        $utilization->addChild('decoder_util', 'N/A');
+
+        // Power (not directly available)
+        $power = $gpu->addChild('power_readings');
+        $power->addChild('power_draw', 'N/A');
+        $power->addChild('power_limit', 'N/A');
+
+        // Clocks (not available on Nouveau)
+        $clocks = $gpu->addChild('clocks');
+        $clocks->addChild('graphics_clock', 'N/A');
+        $clocks->addChild('mem_clock', 'N/A');
+        $maxClocks = $gpu->addChild('max_clocks');
+        $maxClocks->addChild('graphics_clock', 'N/A');
+        $maxClocks->addChild('mem_clock', 'N/A');
+
+        // Process clients from DRI debugfs
+        $processes = $gpu->addChild('processes');
+        if (file_exists($clientsPath)) {
+            $lines = file($clientsPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            array_shift($lines); // Remove header
+            $seenTgids = [];
+            foreach ($lines as $line) {
+                $columns = preg_split('/\s+/', trim($line));
+                if (count($columns) >= 6) {
+                    [$command, $tgid] = $columns;
+                    if (isset($seenTgids[$tgid]))
+                        continue; // Deduplicate by TGID
+                    $seenTgids[$tgid] = true;
+                    $processInfo = $processes->addChild('process_info');
+                    $processInfo->addChild('gpu_instance_id', 'N/A');
+                    $processInfo->addChild('compute_instance_id', 'N/A');
+                    $processInfo->addChild('pid', $tgid);
+                    $processInfo->addChild('type', 'C');
+                    $processInfo->addChild('process_name', $command);
+                    $processInfo->addChild('used_memory', 'N/A');
+                }
+            }
+        }
+
+        $dom = new \DOMDocument('1.0');
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+        $dom->loadXML($xml->asXML());
+        return $dom->saveXML();
     }
 }

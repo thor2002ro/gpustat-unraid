@@ -174,8 +174,8 @@ UI Automatic Refresh / Interval (Seconds):
 
 AMD Utility:
 : <select id="AMDUTILITY" name="AMDUTILITY" size="1">
-    <?=mk_option($gpustat_cfg['AMDUTILITY'] ?? 'radeontop', "radeontop", "radeontop");?>
-    <?=mk_option($gpustat_cfg['AMDUTILITY'] ?? 'radeontop', "nvtop", "nvtop");?>
+    <?=mk_option($gpustat_cfg['AMDUTILITY'] ?? 'nvtop', "nvtop", "nvtop");?>
+    <?=mk_option($gpustat_cfg['AMDUTILITY'] ?? 'nvtop', "radeontop", "radeontop");?>
 </select>
 
 <h4><b>Settings</b></h4>

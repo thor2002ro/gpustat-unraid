@@ -24,16 +24,17 @@ const KEY_MAP = {
     "sm_clock": "Shader Clock", "video_clock": " Video Clock",
     'encutil': "Encoder Util", 'decutil': "Decoder Util", 'encdec': "Enc/Dec",
     'perfstate': "Power State", 'throttled': "Throttling",
-    'thrtlrsn': "Throttling Reason", 'sessions': " ", 'processes': " ",
+    'thrtlrsn': "Throttling Reason", 'sessions': " ",
     // Intel
     '3drender': "3D Render", 'blitter': "Blitter", 'interrupts': "Interrupts/Sec",
     'powerutil': "Power Draw", 'video': "Video", 'videnh': "Video Enhance",
+    'compute': "Compute",
     "rxutil": "Bus Rx Util", "txutil": "Bus TX Util",
 };
 
 // Display order for metric bars; extras appended at end
 const KEY_ORDER = [
-    "clock", "memclock", "3drender", "blitter", "video", "videnh", "interrupts",
+    "clock", "memclock", "3drender", "blitter", "video", "videnh", "compute", "interrupts",
     "sm_clock", "video_clock", "fan", "power", "gttused", "memused", "event",
     "vertex", "texture", "sequencer", "shaderexp", "shaderinter", "scancon",
     "primassem", "depthblk", "colorblk", "uvd", "vce0", "encdec", "encutil", "decutil",
@@ -43,12 +44,13 @@ const KEY_ORDER = [
 // Substring matches to exclude from bar/label rendering (metadata keys)
 const EXCLUDED_KEYS = [
     "max", "unit", "pcie", "driver", "bridge_bus", "passedthrough",
-    "vendor", "name", "temp", "util", "appssupp", "processes",
-    "uuid", "sessions", "thrtlrsn", "panel", "stats", "voltage"
+    "vendor", "name", "temp", "util",
+    "uuid", "sessions", "thrtlrsn", "panel", "stats", "voltage",
+    "vfio", "vfiovm", "active_apps", "igpu",
 ];
 
 // Exceptions to EXCLUDED_KEYS (contain excluded substrings but should display)
-const ADDITIONAL_KEYS = ["encutil", "decutil", "encdec"];
+const ADDITIONAL_KEYS = ["encutil", "decutil", "encdec", "compute"];
 
 // ─── Polling update — refreshes existing DOM elements with live data ─────────
 const gpustat_status = (_args) => {
@@ -62,20 +64,67 @@ const gpustat_status = (_args) => {
             if (key2 === '_debug') return;
             const panel = data["panel"]; // 1-based panel number for DOM targeting
 
-            // 1. App icons (Nvidia: show/hide based on active GPU processes)
-            if (data["appssupp"] && Array.isArray(data["appssupp"])) {
-                data["appssupp"].forEach((app) => {
-                    const $imgSpan = $(`.gpu${panel}-img-span-${app}`);
-                    const $statusIcon = $(`#gpu${panel}-${app}`);
+            // 0. VFIO passthrough — show VM info and skip metric updates
+            if (data["vfio"]) {
+                const $tile = $(`#tblGPUDash${panel}`);
+                $(`.gpu${panel}-vendor`).html(data["vendor"] || '');
+                $(`.gpu${panel}-name`).html(data["name"] || '');
+                $(`.gpu${panel}-util`).html('VFIO');
+                $(`.gpu${panel}-passedthrough`).html('Passthrough').css('color', 'magenta');
 
-                    if (data["processes"] && data["processes"][app + "using"]) {
-                        $imgSpan.css('display', "table-cell");
-                        $statusIcon.attr('title', `Count: ${data["processes"][app + "count"]}\nMemory: ${data["processes"][app + "mem"]}MB`);
-                    } else {
-                        $imgSpan.css('display', "none");
-                        $statusIcon.attr('title', "");
-                    }
+                // Show VM name/icon if available
+                const $vfioRow = $(`.gpu${panel}-vfio-info`);
+                if (data["vfiovm"] && data["vfiovm"] !== false) {
+                    const [vmName, vmIcon] = data["vfiovm"].split(',', 2);
+                    $vfioRow.html(
+                        `<i class='fa fa-tv fa-1x'></i>&nbsp;VM: <strong>${vmName}</strong>` +
+                        (vmIcon ? ` <img src='${vmIcon}' style='height:16px;vertical-align:middle;margin-left:4px;'>` : '')
+                    ).show();
+                } else {
+                    $vfioRow.html("<i class='fa fa-tv fa-1x'></i>&nbsp;VM: Unknown").show();
+                }
+
+                // Driver badge
+                if (data["driver"]) {
+                    $(`.gpu${panel}-driver`).html(data["driver"]).show();
+                }
+                return; // Skip metric updates for VFIO GPUs
+            }
+
+            // 1. Active apps (Docker containers + host processes with icon badges)
+            if (data["active_apps"] && Array.isArray(data["active_apps"]) && data["active_apps"].length > 0) {
+                const $container = $(`.gpu${panel}-active-apps`);
+                $container.empty();
+                data["active_apps"].forEach((app) => {
+                    const iconSrc = Array.isArray(app.icon) ? app.icon[0] : (app.icon || '');
+                    // Build rich multi-line tooltip with all available stats
+                    let tip = app.title || app.name;
+                    if (app.count > 1) tip += `\nInstances: ${app.count}`;
+                    if (app.mem) tip += `\nMemory: ${app.mem} MiB`;
+                    if (app.gpu_usage) tip += `\nGPU: ${app.gpu_usage}`;
+                    if (app.mem_usage) tip += `\nMem Util: ${app.mem_usage}`;
+                    if (app.enc_dec) tip += `\nEnc/Dec: ${app.enc_dec}`;
+                    if (app.encode) tip += `\nEncode: ${app.encode}`;
+                    if (app.decode) tip += `\nDecode: ${app.decode}`;
+                    if (app.kind) tip += `\nType: ${app.kind}`;
+                    if (app.user) tip += `\nUser: ${app.user}`;
+                    // Render as compact square icon badge
+                    const escapedTip = tip.replace(/'/g, '&#39;');
+                    $container.append(
+                        `<span class='gpu-app-badge' title='${escapedTip}'>` +
+                        (iconSrc
+                            ? `<img src='${iconSrc}' class='gpu-image'>`
+                            : `<i class='fa fa-cog'></i>`) +
+                        `</span>`
+                    );
                 });
+                $container.closest('tr').show();
+            } else {
+                const $container = $(`.gpu${panel}-active-apps`);
+                if ($container.length) {
+                    $container.empty();
+                    $container.closest('tr').hide();
+                }
             }
 
             // 2. Update metric values, progress bars, and tooltips
@@ -142,7 +191,7 @@ const gpustat_status = (_args) => {
             if (hasBridge) pcieTitle += `\nBridge Chip bus: ${bridgeBus}`;
             $pcieEl.attr('title', pcieTitle);
 
-            // 6. Header: voltage, rx/tx — show when data is available
+            // 6. Header: voltage, rx/tx, driver — show when data is available
             const hasVoltage = data["voltage"] != null && data["voltage"].toString() !== 'N/A';
             toggleVisibility(`.gpu${panel}-voltage-wrap`, hasVoltage);
             if (hasVoltage) {
@@ -165,6 +214,12 @@ const gpustat_status = (_args) => {
                 $(`.gpu${panel}-txutil`).html(data["txutil"]);
                 $(`.gpu${panel}-txutilunit`).html(data["txutilunit"] || '');
                 $(`.gpu${panel}-txutil-wrap`).attr('title', `PCIe Tx: ${data["txutil"]} ${data["txutilunit"] || ''}`);
+            }
+
+            // 6b. Driver badge (e.g. NVIDIA, NOUVEAU, AMDGPU, I915, XE)
+            if (data["driver"]) {
+                $(`.gpu${panel}-driver`).html(data["driver"]);
+                toggleVisibility(`.gpu${panel}-driver-wrap`, true);
             }
 
             // 7. Passthrough status — magenta if VM passthrough, green if normal
@@ -260,10 +315,10 @@ const gpustat_dash_build = (_args) => {
                 fragment.appendChild($clone[0]);
             }
 
-            // Sessions row (Nvidia only)
-            if (data["vendor"] && data["vendor"].toLowerCase() === "nvidia") {
-                const tmplSessions = $('#message-template-sessions').html();
-                const $clone = $(tmplSessions.replaceAll("{{gpuNR}}", panel)).removeAttr('id');
+            // Active apps row
+            const tmplActiveApps = $('#message-template-active-apps').html();
+            if (tmplActiveApps) {
+                const $clone = $(tmplActiveApps.replaceAll("{{gpuNR}}", panel)).removeAttr('id');
                 fragment.appendChild($clone[0]);
             }
 
