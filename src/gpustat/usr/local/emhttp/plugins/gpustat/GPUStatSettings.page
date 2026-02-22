@@ -18,6 +18,7 @@ $settings = array(
     "DISPMEMUSED"       => "Memory Usage",
     "DISPENCUTIL"       => "Encoder Utilization",
     "DISPDECUTIL"       => "Decoder Utilization",
+    "DISPENCDEC"        => "Encoder / Decoder",
     "DISPRXUTIL"        => "PCI Rx Utilization",
     "DISPTXUTIL"        => "PCI Tx Utilization",
     "DISPSESSIONS"      => "Active Sessions",

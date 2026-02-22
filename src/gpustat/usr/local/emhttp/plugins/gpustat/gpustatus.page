@@ -79,8 +79,15 @@ foreach ($multigpus as $id=>$gpu) {
         // Temp wrapper — tooltip set by JS
         if ($gpustat_cfg['DISPTEMP']) $stats .= "<span class='gpu{$i}-temp-wrap'><i class='fa fa-thermometer-half fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-temp'></span></span>&nbsp;&nbsp;&nbsp;" ;
 
+        // Voltage
+        $stats .= "<span class='gpu{$i}-voltage-wrap hidden'><i class='fa fa-bolt fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-voltage'></span><span class='gpu{$i}-voltageunit'></span></span>&nbsp;&nbsp;&nbsp;";
+
         // PCIe gen/width with red down-arrows when below max
         $stats .= "<span title='PCIe Gen' class='gpu-stats-primary'><i class='fa fa-cogs fa-1x'></i>&nbsp;<span class='gpu{$i}-pciegen'></span>&nbsp;<i id='gpu{$i}-pciegen-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i><span>&nbsp;-&nbsp;</span><span class='gpu{$i}-pciewidth'></span>&nbsp;<i id='gpu{$i}-pciewidth-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i></span>&nbsp;&nbsp;&nbsp;";
+
+        // PCIe Rx/Tx
+        $stats .= "<span class='gpu{$i}-rxutil-wrap hidden'><i class='fa fa-arrow-down fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-rxutil'></span>&nbsp;<span class='gpu{$i}-rxutilunit'></span></span>&nbsp;&nbsp;&nbsp;";
+        $stats .= "<span class='gpu{$i}-txutil-wrap hidden'><i class='fa fa-arrow-up fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-txutil'></span>&nbsp;<span class='gpu{$i}-txutilunit'></span></span>&nbsp;&nbsp;&nbsp;";
         }
 
         if ($gpu_nv && $gpustat_cfg['DISPSESSIONS']) $stats .="<span> Processes: <span class='gpu{$i}-sessions'></span></span>";

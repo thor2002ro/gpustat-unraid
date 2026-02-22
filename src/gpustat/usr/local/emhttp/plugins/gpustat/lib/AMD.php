@@ -382,8 +382,7 @@ class AMD extends Main
 
         // Encode/decode — nvtop uses either shared "encode_decode" or separate fields
         if (isset($gpuData['encode_decode'])) {
-            $this->pageData['encutil'] = $gpuData['encode_decode'];
-            $this->pageData['decutil'] = $gpuData['encode_decode'];
+            $this->pageData['encdec'] = $gpuData['encode_decode'];
         }
         else {
             if (isset($gpuData['encode']))
@@ -392,11 +391,15 @@ class AMD extends Main
                 $this->pageData['decutil'] = $gpuData['decode'];
         }
 
-        // PCIe rx/tx (bytes/sec) — only present on some GPUs
-        if (isset($gpuData['pcie_rx']))
-            $this->pageData['rxutil'] = $gpuData['pcie_rx'];
-        if (isset($gpuData['pcie_tx']))
-            $this->pageData['txutil'] = $gpuData['pcie_tx'];
+        // PCIe rx/tx (KB/s from nvtop) → convert to MB/s, compute max from gen/width
+        if (isset($gpuData['pcie_rx']) && $gpuData['pcie_rx'] !== null) {
+            $this->pageData['rxutil'] = $this->roundFloat((float)$gpuData['pcie_rx'] / 1000, 1);
+            $this->pageData['rxutilunit'] = 'MB/s';
+        }
+        if (isset($gpuData['pcie_tx']) && $gpuData['pcie_tx'] !== null) {
+            $this->pageData['txutil'] = $this->roundFloat((float)$gpuData['pcie_tx'] / 1000, 1);
+            $this->pageData['txutilunit'] = 'MB/s';
+        }
 
         // Process detection
         foreach (self::SUPPORTED_APPS as $app => $cmds) {

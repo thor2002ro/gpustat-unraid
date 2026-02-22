@@ -22,7 +22,7 @@ const KEY_MAP = {
     "colorblk": "Color Blk", "uvd": "UVD", "vce0": "VCE0", "gttused": "GTT Mem",
     // Nvidia
     "sm_clock": "Shader Clock", "video_clock": " Video Clock",
-    'encutil': "Encoder Util", 'decutil': "Decoder Util",
+    'encutil': "Encoder Util", 'decutil': "Decoder Util", 'encdec': "Enc/Dec",
     'perfstate': "Power State", 'throttled': "Throttling",
     'thrtlrsn': "Throttling Reason", 'sessions': " ", 'processes': " ",
     // Intel
@@ -36,7 +36,7 @@ const KEY_ORDER = [
     "clock", "memclock", "3drender", "blitter", "video", "videnh", "interrupts",
     "sm_clock", "video_clock", "fan", "power", "gttused", "memused", "event",
     "vertex", "texture", "sequencer", "shaderexp", "shaderinter", "scancon",
-    "primassem", "depthblk", "colorblk", "uvd", "vce0", "encutil", "decutil",
+    "primassem", "depthblk", "colorblk", "uvd", "vce0", "encdec", "encutil", "decutil",
     "rxutil", "txutil", "perfstate", "throttled", "thrtlrsn", "sessions",
 ];
 
@@ -44,11 +44,11 @@ const KEY_ORDER = [
 const EXCLUDED_KEYS = [
     "max", "unit", "pcie", "driver", "bridge_bus", "passedthrough",
     "vendor", "name", "temp", "util", "appssupp", "processes",
-    "uuid", "sessions", "thrtlrsn", "panel", "stats"
+    "uuid", "sessions", "thrtlrsn", "panel", "stats", "voltage"
 ];
 
 // Exceptions to EXCLUDED_KEYS (contain excluded substrings but should display)
-const ADDITIONAL_KEYS = ["rxutil", "txutil", "encutil", "decutil"];
+const ADDITIONAL_KEYS = ["encutil", "decutil", "encdec"];
 
 // ─── Polling update — refreshes existing DOM elements with live data ─────────
 const gpustat_status = (_args) => {
@@ -142,7 +142,32 @@ const gpustat_status = (_args) => {
             if (hasBridge) pcieTitle += `\nBridge Chip bus: ${bridgeBus}`;
             $pcieEl.attr('title', pcieTitle);
 
-            // 6. Passthrough status — magenta if VM passthrough, green if normal
+            // 6. Header: voltage, rx/tx — show when data is available
+            const hasVoltage = data["voltage"] != null && data["voltage"].toString() !== 'N/A';
+            toggleVisibility(`.gpu${panel}-voltage-wrap`, hasVoltage);
+            if (hasVoltage) {
+                $(`.gpu${panel}-voltage`).html(data["voltage"]);
+                $(`.gpu${panel}-voltageunit`).html(data["voltageunit"] || 'V');
+                $(`.gpu${panel}-voltage-wrap`).attr('title', `Voltage: ${data["voltage"]} ${data["voltageunit"] || 'V'}`);
+            }
+
+            const hasRx = data["rxutil"] != null && data["rxutil"].toString() !== 'N/A';
+            toggleVisibility(`.gpu${panel}-rxutil-wrap`, hasRx);
+            if (hasRx) {
+                $(`.gpu${panel}-rxutil`).html(data["rxutil"]);
+                $(`.gpu${panel}-rxutilunit`).html(data["rxutilunit"] || '');
+                $(`.gpu${panel}-rxutil-wrap`).attr('title', `PCIe Rx: ${data["rxutil"]} ${data["rxutilunit"] || ''}`);
+            }
+
+            const hasTx = data["txutil"] != null && data["txutil"].toString() !== 'N/A';
+            toggleVisibility(`.gpu${panel}-txutil-wrap`, hasTx);
+            if (hasTx) {
+                $(`.gpu${panel}-txutil`).html(data["txutil"]);
+                $(`.gpu${panel}-txutilunit`).html(data["txutilunit"] || '');
+                $(`.gpu${panel}-txutil-wrap`).attr('title', `PCIe Tx: ${data["txutil"]} ${data["txutilunit"] || ''}`);
+            }
+
+            // 7. Passthrough status — magenta if VM passthrough, green if normal
             updateColorString(`.gpu${panel}-passedthrough`, data["passedthrough"], "Passthrough");
         });
     }).fail((jqXHR, status, err) => {
