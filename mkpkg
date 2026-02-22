@@ -14,28 +14,28 @@ MD5="$ARCHIVE/$PLUGIN-$VERSION.md5"
 sed -i -e "s#\(ENTITY\s*date[^\"]*\).*#\1\"${DATE}\">#" "$PLG_FILE"
 
 cd "$START/src/$PLUGIN"
-"./../../makepkg" -l y -c y "$PACKAGE"
+"./../../gpu_tools/makepkg" -l y -c y "$PACKAGE"
 
 cd "$START/gpu_tools"
 ./make_intel-gpu-tools.sh
 ./make_radeontop_pkg.sh
 ./make_nvtop_pkg.sh
+
+docker rmi ubuntu:latest >/dev/null 2>&1 || true
+mv -f PKGS/*.tgz "$ARCHIVE/"
 cd "$START"
 
 function md5_dir {
-for file in $1/*;
-do
-        if [[ -f "$file" && ! $file == *.md5 ]];
-        then
-                file_basename=$(basename "$file");
-                echo "$file" "$file_basename";
-                md5sum "$file" > "$file.md5";
-        fi;
-        if [[ -d "$file" ]];
-        then
-                md5_dir $file
-        fi;
-done;
+    local target_dir="$1"
+    for file in "$target_dir"/*; do
+        if [[ -f "$file" && ! "$file" == *.md5 ]]; then
+            local file_basename=$(basename "$file")
+            echo "$file" "$file_basename"
+            (cd "$target_dir" && md5sum "$file_basename" > "$file_basename.md5")
+        elif [[ -d "$file" ]]; then
+            md5_dir "$file"
+        fi
+    done
 }
 
 md5_dir "$ARCHIVE"

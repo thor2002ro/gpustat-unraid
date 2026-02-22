@@ -2,7 +2,7 @@
 set -e
 
 PKG="radeontop"
-DATE="$(date +'%Y%m%d')"
+DATE="$(date +'%Y.%m.%d')"
 OUT_DIR="PKGS"
 IMAGE_NAME="radeontop-builder-temp"
 

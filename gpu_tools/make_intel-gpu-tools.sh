@@ -2,7 +2,7 @@
 set -e
 
 PKG="igt-gpu-tools"
-DATE="$(date +'%Y%m%d')"
+DATE="$(date +'%Y.%m.%d')"
 OUT_DIR="PKGS"
 IMAGE_NAME="igt-builder-temp"
 
