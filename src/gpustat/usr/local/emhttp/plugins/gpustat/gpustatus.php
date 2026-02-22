@@ -27,6 +27,7 @@ function fetchGPUStatistics($array)
     if (!is_array($array))
         return $data;
     foreach ($array as $gpu) {
+        refreshHardwareData($gpu);
         $gpustat_cfg["VENDOR"] = $gpu['vendor'];
         $gpustat_cfg["GPUID"] = $gpu['id'];
 
@@ -50,6 +51,28 @@ function fetchGPUStatistics($array)
         $data[$gpu["id"]] = $decode;
     }
     return $data;
+}
+
+// Re-detect hardware fields from live inventory (avoids stale config data)
+function refreshHardwareData(array &$gpu): void
+{
+    static $inventory = null;
+    if ($inventory === null) {
+        global $gpustat_cfg;
+        $cfg = $gpustat_cfg;
+        $cfg['inventory'] = true;
+        $inventory = array_merge(
+            (new Nvidia($cfg))->getInventorym(),
+            (new Intel($cfg))->getInventory(),
+            (new AMD($cfg))->getInventory()
+        );
+    }
+    if (isset($inventory[$gpu['id']])) {
+        $fresh = $inventory[$gpu['id']];
+        $gpu['model'] = $fresh['model'] ?? $gpu['model'] ?? '';
+        $gpu['guid'] = $fresh['guid'] ?? $gpu['guid'] ?? '';
+        $gpu['bridge_chip'] = $fresh['bridge_chip'] ?? null;
+    }
 }
 
 // ─── Path 1: CLI ─────────────────────────────────────────────────────────────

@@ -85,10 +85,7 @@ function save_cfg($val, $gpus, $settings) {
     foreach ($val['MULTIGPU'] as $pciid) {
         $gpupciid = $pciid;
         $json_array[$gpupciid]['id'] = $gpus[$gpupciid]['id'];
-        $json_array[$gpupciid]['model'] = $gpus[$gpupciid]['model'];
         $json_array[$gpupciid]['vendor'] = $gpus[$gpupciid]['vendor'];
-        $json_array[$gpupciid]['guid'] = $gpus[$gpupciid]['guid'];
-        $json_array[$gpupciid]['bridge_chip'] = $gpus[$gpupciid]['bridge_chip'];
 
         // Update the stats array
         $json_array[$gpupciid]['stats'] = array();
@@ -125,7 +122,7 @@ $cfg = $gpustat_cfg = parse_plugin_cfg("gpustat", true);
 $gpustat_inventory = true;
 
 if (!isset($gpustat_cfg["MULTIGPUJSON"])) {
-    $gpustat_cfg["MULTIGPUJSON"] = "%7B%22%22%3A%7B%22id%22%3A%22None%22%2C%22model%22%3A%22None%22%2C%22vendor%22%3A%22None%22%2C%22guid%22%3A%22None%22%2C%22bridge_chip%22%3Anull%2C%22stats%22%3A%7B%22DISPCLOCKS%22%3A%221%22%2C%22DISPPCIUTIL%22%3A%221%22%2C%22DISPPWRDRAW%22%3A%221%22%2C%22DISPPWRSTATE%22%3A%221%22%2C%22DISPMEMUSEDUTIL%22%3A%221%22%2C%22DISPTEMP%22%3A%221%22%2C%22DISPFAN%22%3A%221%22%2C%22DISPENCDEC%22%3A%221%22%2C%22DISPTHROTTLE%22%3A%221%22%2C%22DISPSESSIONS%22%3A%221%22%2C%22DISP3DRENDER%22%3A%221%22%2C%22DISPBLITTER%22%3A%221%22%2C%22DISPVIDEO%22%3A%221%22%2C%22DISPVIDENH%22%3A%221%22%2C%22DISPINTERRUPT%22%3A%221%22%2C%22DISPPWRDRWSEL%22%3A%22GPU%22%2C%22DISPEVENT%22%3A%221%22%2C%22DISPVERTEX%22%3A%221%22%2C%22DISPTEXTURE%22%3A%221%22%2C%22DISPSHADEREXP%22%3A%221%22%2C%22DISPSEQUENCER%22%3A%221%22%2C%22DISPSHADERINTER%22%3A%221%22%2C%22DISPSCANCON%22%3A%221%22%2C%22DISPPRIMASSEM%22%3A%221%22%2C%22DISPDEPTHBLK%22%3A%221%22%2C%22DISPCOLORBLK%22%3A%221%22%2C%22DISPGTTUSEDUTIL%22%3A%221%22%7D%7D%7D";
+    $gpustat_cfg["MULTIGPUJSON"] = "%7B%22%22%3A%7B%22id%22%3A%22None%22%2C%22vendor%22%3A%22None%22%7D%7D";
 }
 $multigpus = json_decode(urldecode($gpustat_cfg["MULTIGPUJSON"]), true);
 
@@ -161,12 +158,12 @@ Temperature Format:
     <?=mk_option($gpustat_cfg['TEMPFORMAT'], "F", "Fahrenheit");?>
 </select>
 
-UI Automatic Refresh / Interval (Milliseconds):
+UI Automatic Refresh / Interval (Seconds):
 : <select id="UIREFRESH" name="UIREFRESH" size="1">
     <?=mk_option($gpustat_cfg['UIREFRESH'], "0", "No");?>
     <?=mk_option($gpustat_cfg['UIREFRESH'], "1", "Yes");?>
 </select>
-<input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="30000">
+<input type="text" name="UIREFRESHINT" class="narrow" maxlength="5" value="<?=$gpustat_cfg['UIREFRESHINT'];?>" placeholder="30">
 <br>
 
 <h4><b>Settings</b></h4>
