@@ -2,6 +2,10 @@ Menu="Dashboard:0"
 Icon="gpustat.png"
 ---
 <?php
+/*
+ * gpustatus.page — Generates Unraid dashboard tiles for GPU monitoring.
+ * Loads config → builds per-GPU header HTML → defines templates → inits JS polling.
+ */
  
 /*
   Create a .page file based on this example file and store the file in your plugin directory
@@ -25,22 +29,26 @@ Icon="gpustat.png"
   <span class="w72">
 */
 
-$pluginname = "gpustat"; // substitute this entry with the name of your plugin
-
+// Load config & decode GPU selection
+$pluginname = "gpustat";
 $gpustat_cfg = parse_plugin_cfg('gpustat', true);
+
+// MULTIGPUJSON: URL-encoded JSON with selected GPUs + display toggles (default = placeholder)
 if (!isset($gpustat_cfg["MULTIGPUJSON"])) $gpustat_cfg["MULTIGPUJSON"] = "%7B%22%22%3A%7B%22id%22%3A%22None%22%2C%22model%22%3A%22None%22%2C%22vendor%22%3A%22None%22%2C%22guid%22%3A%22None%22%2C%22bridge_chip%22%3Anull%2C%22stats%22%3A%7B%22DISPCLOCKS%22%3A%221%22%2C%22DISPPCIUTIL%22%3A%221%22%2C%22DISPPWRDRAW%22%3A%221%22%2C%22DISPPWRSTATE%22%3A%221%22%2C%22DISPMEMUSEDUTIL%22%3A%221%22%2C%22DISPTEMP%22%3A%221%22%2C%22DISPFAN%22%3A%221%22%2C%22DISPENCDEC%22%3A%221%22%2C%22DISPTHROTTLE%22%3A%221%22%2C%22DISPSESSIONS%22%3A%221%22%2C%22DISP3DRENDER%22%3A%221%22%2C%22DISPBLITTER%22%3A%221%22%2C%22DISPVIDEO%22%3A%221%22%2C%22DISPVIDENH%22%3A%221%22%2C%22DISPINTERRUPT%22%3A%221%22%2C%22DISPPWRDRWSEL%22%3A%22GPU%22%2C%22DISPEVENT%22%3A%221%22%2C%22DISPVERTEX%22%3A%221%22%2C%22DISPTEXTURE%22%3A%221%22%2C%22DISPSHADEREXP%22%3A%221%22%2C%22DISPSEQUENCER%22%3A%221%22%2C%22DISPSHADERINTER%22%3A%221%22%2C%22DISPSCANCON%22%3A%221%22%2C%22DISPPRIMASSEM%22%3A%221%22%2C%22DISPDEPTHBLK%22%3A%221%22%2C%22DISPCOLORBLK%22%3A%221%22%2C%22DISPGTTUSEDUTIL%22%3A%221%22%7D%7D%7D";
 $multi = urldecode($gpustat_cfg["MULTIGPUJSON"]) ;
-$multigpus = json_decode($multi,true) ;
+$multigpus = json_decode($multi,true) ; // keyed by PCI ID
 $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
 
+// Supported apps for GPU process detection (Nvidia only)
 $apps = [
     'plex', 'jellyfin', 'handbrake', 'emby', 'tdarr', 'unmanic', 'dizquetv', 'ersatztv',
     'fileflows', 'frigate', 'deepstack', 'nsfminer', 'shinobipro', 'foldinghome',
 ];
 
-$i= $j =$k = 1;  
+$i= $j =$k = 1;  // $i=panel#, $j=column(1-3), $k=tile group
 $gpus_selected = count($multigpus) ;
 
+// Build one dashboard <tbody> tile per selected GPU
 foreach ($multigpus as $id=>$gpu) {
     $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
     switch ($gpu['vendor']) {
@@ -54,22 +62,33 @@ foreach ($multigpus as $id=>$gpu) {
             $gpu_amd = true;
             break;
         default:
-            // If vendor isn't set the config hasn't been saved, don't render the plugin
             $gpu_unknown = true;
             $unknown_msg = "No GPUs selected - Select GPU(s) in GPUStat settings page and apply.";
     }
 
     if ($gpus_selected > 1) $gpu_tag = $i ; else $gpu_tag = "" ;
+
+        // Header stats — classes follow gpu{N}-{metric} pattern for JS targeting
         $stats = "<div class='section'>_(GPU".$gpu_tag." - )_";
         $stats .= "<span class='gpu{$i}-vendor'></span>&nbsp;<span class='gpu{$i}-name'></span>&nbsp;<span>(<span class='gpu{$i}-passedthrough'></span>)</span><br>";
-        $stats .= "<i class='fa fa-microchip fa-1x'></i>&nbsp<span class='gpu-stats-primary gpu{$i}-util'></span>&nbsp;&nbsp;&nbsp;";
+
+        // Util wrapper (icon+value) — tooltip set by JS
+        $stats .= "<span class='gpu{$i}-util-wrap'><i class='fa fa-microchip fa-1x'></i>&nbsp<span class='gpu-stats-primary gpu{$i}-util'></span></span>&nbsp;&nbsp;&nbsp;";
+
         if ($gpu_nv || $gpu_amd) {
-        if ($gpustat_cfg['DISPTEMP']) $stats .= "<i class='fa fa-thermometer-half fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-temp'></span>&nbsp;&nbsp;&nbsp;" ;
+        // Temp wrapper — tooltip set by JS
+        if ($gpustat_cfg['DISPTEMP']) $stats .= "<span class='gpu{$i}-temp-wrap'><i class='fa fa-thermometer-half fa-1x'></i>&nbsp;<span class='gpu-stats-primary gpu{$i}-temp'></span></span>&nbsp;&nbsp;&nbsp;" ;
+
+        // PCIe gen/width with red down-arrows when below max
         $stats .= "<span title='PCIe Gen' class='gpu-stats-primary'><i class='fa fa-cogs fa-1x'></i>&nbsp;<span class='gpu{$i}-pciegen'></span>&nbsp;<i id='gpu{$i}-pciegen-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i><span>&nbsp;-&nbsp;</span><span class='gpu{$i}-pciewidth'></span>&nbsp;<i id='gpu{$i}-pciewidth-arrow' class='fa fa-caret-down fa-1x hidden' style='color:red; display: inline;'></i></span>&nbsp;&nbsp;&nbsp;";
         }
+
         if ($gpu_nv && $gpustat_cfg['DISPSESSIONS']) $stats .="<span> Processes: <span class='gpu{$i}-sessions'></span></span>";
     $stats .= "<br><br></div>" ;
+
     $layout = GPULayout($i, $gpu["vendor"],$gpustat_cfg) ;
+
+    // Tile output — consumed by Unraid dashboard engine
     $mytiles[$pluginname.$k]['column'.$j] =
     <<<EOT
     <tbody id="tblGPUDash$i" title="_(GPU #$i Stats)_">
@@ -79,16 +98,19 @@ foreach ($multigpus as $id=>$gpu) {
     $layout
     </tbody>
     EOT;
-    $multigpus[$id]["panel"] = $i ;
-    $i++ ; #GPU Number
-    $j++ ; #Default Column
-    if ($j >3) { $j=1 ; $k++ ;} #Plugin name in array. Only 3 Dashboards per name.
+
+    $multigpus[$id]["panel"] = $i ; // Store panel# for JS _args
+    $i++ ;
+    $j++ ;
+    if ($j >3) { $j=1 ; $k++ ;}
 }
 
 
+// Vendor-specific extra rows (currently only shows "no GPU" message if unknown)
 function GPULayout($count,$vendor,$gpustat_cfg) {
 
 $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
+$page_render = '';
     switch ($vendor) {
     case "nvidia":
         $gpu_nv = true;
@@ -100,19 +122,11 @@ $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
         $gpu_amd = true;
         break;
     default:
-        // If vendor isn't set the config hasn't been saved, don't render the plugin
         $gpu_unknown = true;
         $unknown_msg = "No GPUs selected - Select GPU(s) in GPUStat settings page and apply.";
 }
 
-    //$page_render = '<tr class="updated"><td>' ;
-
-    # No GPU Set 
-
     if ($gpu_unknown)  $page_render .= "<tr><td><span>_(No GPUs selected - Select GPU(s) in GPUStat settings page and apply.)_</span></td></tr>" ; 
-
-  
-    
 
     return($page_render) ;    
 }
@@ -123,9 +137,8 @@ $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
     @import url("/plugins/gpustat/css/style.css");
 </style>
 
-
-
-
+<!-- Templates for gpustat.js — {{gpuNR}}=panel, {{stat}}=key, {{label}}=name -->
+<!-- Bar rows (paired, 2 per row) -->
 <script id="message-template-bars" type="text/template">
     <tr><td><span class='w36'><i class='ups fa fa-fw icon-hardware'></i>_({{label1}})_<span class='hidden'>_( / {{label2}})_</span></span>
     <span class='w26'><span class='gpu{{gpuNR}}-{{stat1}} load'>0%</span><div class='usage-disk sys'><span class='gpu{{gpuNR}}-{{stat1}}bar' id='gpu{{gpuNR}}-{{stat1}}bar'></span><span></span></div></span>
@@ -133,6 +146,7 @@ $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
     </td></tr>
 </script>
 
+<!-- Text-only rows (triplets, 3 per row) -->
 <script id="message-template-simple" type="text/template">
 <tr><td colspan ='3' id="gpu-labels" >
     <span class='w36'><i class='ups fa fa-fw icon-hardware'></i>_({{label1}})_: <span class='gpu{{gpuNR}}-{{stat1}}'></span></span>
@@ -141,6 +155,7 @@ $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
     </td></tr>
 </script>
 
+<!-- Active apps row (Nvidia only) -->
 <script id="message-template-sessions" type="text/template">
     <tr>
         <td colspan ='2' >
@@ -154,6 +169,7 @@ $gpu_nv = $gpu_intel = $gpu_amd = $gpu_unknown = false;
     </tr>
 </script>
 
+<!-- JS init: build once → populate → poll on interval -->
 <script type="text/javascript" src="/plugins/gpustat/scripts/gpustat.js"></script>
 <script type="text/javascript">
     $(document).ready(function() {
