@@ -14,7 +14,9 @@ class Intel extends Main
     const INVENTORY_UTILITY = 'lspci';
     const INVENTORY_PARAM = " -Dmm | grep -E 'Display|VGA' ";
     const INVENTORY_REGEX =
-        '/^(?P<id>(?P<busid>[0-9a-f]{2}):[0-9a-f]{2}\.[0-9a-f])\s+\"(?P<device>.+)\"\s+\"(?P<vendor>.+)\"\s+\"(?P<model>.+)\"\s+(?:-\w+\s+){2}(?:\"(?P<manufacturer>.+)\"\s+\"(?P<product>.+)\"|())/imU';
+        // lspci -Dmm prefixes the PCI domain (0000:0a:00.0). Keep it in id: intel_gpu_top's
+        // pci:slot= selector and the /sys/bus/pci/devices paths both need the domain form.
+        '/^(?P<id>(?:[0-9a-f]{4}:)?(?P<busid>[0-9a-f]{2}):[0-9a-f]{2}\.[0-9a-f])\s+\"(?P<device>.+)\"\s+\"(?P<vendor>.+)\"\s+\"(?P<model>.+)\"\s+(?:-\w+\s+){2}(?:\"(?P<manufacturer>.+)\"\s+\"(?P<product>.+)\"|())/imU';
 
     const STATISTICS_PARAM = '-J -s 250 -d pci:slot="';
     const STATISTICS_WRAPPER = 'timeout -k .500 .600';
@@ -43,11 +45,11 @@ class Intel extends Main
             if ($this->cmdexists) {
                 $this->runCommand(self::INVENTORY_UTILITY, self::INVENTORY_PARAM, false);
                 if (!empty($this->stdout) && strlen($this->stdout) > 0) {
-                    $this->parseInventory(self::INVENTORY_REGEX);
+                    $this->inventory = $this->parseInventory(self::INVENTORY_REGEX);
                 }
                 if (!empty($this->inventory)) {
                     foreach ($this->inventory as $gpu) {
-                        if ($vendor != "Intel Corporation")
+                        if ($gpu['vendor'] != "Intel Corporation")
                             continue;
                         $result[$gpu['id']] = [
                             'vendor' => 'Intel',
@@ -127,8 +129,12 @@ class Intel extends Main
      */
     private function parseStatistics($gpu)
     {
-        // JSON output from intel_gpu_top with multiple array indexes isn't properly formatted
-        $stdout = "[" . str_replace('}{', '},{', str_replace(["\n", "\t"], '', $this->stdout)) . "]";
+        // Old intel_gpu_top printed bare objects back to back; current builds print a JSON array
+        // that the timeout wrapper cuts off before its closing bracket. Normalize both to one
+        // clean array: drop any opening bracket and trailing comma/bracket, then wrap.
+        $raw = trim(str_replace(["\n", "\r", "\t"], '', $this->stdout));
+        $raw = rtrim(ltrim($raw, "[ "), ",] ");
+        $stdout = "[" . str_replace('}{', '},{', $raw) . "]";
 
         try {
             $data = json_decode($stdout, true, 512, JSON_THROW_ON_ERROR);
