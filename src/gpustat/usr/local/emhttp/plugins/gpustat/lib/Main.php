@@ -2,6 +2,13 @@
 
 namespace gpustat\lib;
 
+// The command separator the vendor classes join with. gpustatus.php used to declare it; the
+// vendor classes still expect it. Global on purpose: an unqualified constant lookup inside this
+// namespace falls back to the global one.
+if (!defined('ES')) {
+    define('ES', ' ');
+}
+
 require_once('/usr/local/emhttp/plugins/dynamix/include/Wrappers.php');
 
 // Base class for all vendor GPU classes (AMD, Nvidia, Intel).
@@ -450,7 +457,7 @@ class Main
      */
     protected function getPCIeBandwidthFromSysfs(string $pciid): void
     {
-        $sysfs = "/sys/bus/pci/devices/$pciid";
+        $sysfs = $this->slotLinkDevice($pciid);
         if (!file_exists("$sysfs/max_link_speed") || !file_exists("$sysfs/max_link_width")) {
             return;
         }
@@ -469,6 +476,38 @@ class Main
 
         // Detect integrated GPU (bus 00:xx.x)
         $this->pageData['igpu'] = (strpos($pciid, '0000:00:') === 0) ? '1' : '0';
+    }
+
+    /**
+     * The sysfs device whose link is the slot's. A discrete card with an on-board PCIe switch
+     * (Intel Arc, some Nvidia and AMD boards) puts the GPU behind bridges of its own; the GPU's
+     * link is then an internal one and reads as x1 Gen1 no matter what the slot negotiated.
+     * Walk up while the parent is a bridge from the same vendor as the GPU, stopping short of the
+     * root port (a bridge whose own parent is the root bus, not a device): the topmost bridge on
+     * the card is its upstream port, and that port's link is the slot — its max is what the card
+     * can do, its current is what the slot negotiated. A card sitting directly in a root port,
+     * or an iGPU, has no such bridge and is returned as is.
+     */
+    protected function slotLinkDevice(string $pciid): string
+    {
+        $dev = realpath("/sys/bus/pci/devices/$pciid");
+        if ($dev === false) {
+            return "/sys/bus/pci/devices/$pciid";
+        }
+        $vendor = @file_get_contents("$dev/vendor");
+        $top = $dev;
+        for ($parent = dirname($dev); ; $parent = dirname($parent)) {
+            if (!is_file("$parent/class") || !is_file("$parent/vendor")) {
+                break;
+            }
+            $isBridge = strpos(trim(file_get_contents("$parent/class")), '0x0604') === 0;
+            $isRootPort = !is_file(dirname($parent) . '/vendor');
+            if (!$isBridge || $isRootPort || file_get_contents("$parent/vendor") !== $vendor) {
+                break;
+            }
+            $top = $parent;
+        }
+        return $top;
     }
 
     // Convert PCIe link speed (GT/s) to generation number
